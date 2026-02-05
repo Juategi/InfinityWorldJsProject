@@ -1,3 +1,4 @@
 export * from "./Player";
 export * from "./Parcel";
-export * from "./Building";
+export * from "./PlaceableObject";
+export * from "./PlacedObject";

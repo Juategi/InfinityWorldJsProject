@@ -19,6 +19,15 @@ export class MemoryParcelRepository implements IParcelRepository {
     return result;
   }
 
+  async findAtPosition(x: number, y: number): Promise<Parcel | null> {
+    for (const parcel of this.parcels.values()) {
+      if (parcel.x === x && parcel.y === y) {
+        return parcel;
+      }
+    }
+    return null;
+  }
+
   async findInArea(x: number, y: number, radius: number): Promise<Parcel[]> {
     const result: Parcel[] = [];
     for (const parcel of this.parcels.values()) {
@@ -32,24 +41,9 @@ export class MemoryParcelRepository implements IParcelRepository {
     return result;
   }
 
-  async findAtPosition(x: number, y: number): Promise<Parcel | null> {
-    for (const parcel of this.parcels.values()) {
-      if (
-        x >= parcel.x &&
-        x < parcel.x + parcel.width &&
-        y >= parcel.y &&
-        y < parcel.y + parcel.height
-      ) {
-        return parcel;
-      }
-    }
-    return null;
-  }
-
-  async create(data: Omit<Parcel, "id" | "createdAt">): Promise<Parcel> {
+  async create(data: Omit<Parcel, "id">): Promise<Parcel> {
     const parcel: Parcel = {
       id: randomUUID(),
-      createdAt: new Date(),
       ...data,
     };
     this.parcels.set(parcel.id, parcel);

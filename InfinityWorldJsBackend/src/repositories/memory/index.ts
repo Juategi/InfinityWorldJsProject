@@ -1,3 +1,4 @@
 export * from "./MemoryPlayerRepository";
 export * from "./MemoryParcelRepository";
-export * from "./MemoryBuildingRepository";
+export * from "./MemoryPlaceableObjectRepository";
+export * from "./MemoryPlacedObjectRepository";

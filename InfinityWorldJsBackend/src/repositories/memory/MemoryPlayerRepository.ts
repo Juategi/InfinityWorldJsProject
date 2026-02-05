@@ -9,19 +9,18 @@ export class MemoryPlayerRepository implements IPlayerRepository {
     return this.players.get(id) || null;
   }
 
-  async findByUsername(username: string): Promise<Player | null> {
+  async findByName(name: string): Promise<Player | null> {
     for (const player of this.players.values()) {
-      if (player.username === username) {
+      if (player.name === name) {
         return player;
       }
     }
     return null;
   }
 
-  async create(data: Omit<Player, "id" | "createdAt">): Promise<Player> {
+  async create(data: Omit<Player, "id">): Promise<Player> {
     const player: Player = {
       id: randomUUID(),
-      createdAt: new Date(),
       ...data,
     };
     this.players.set(player.id, player);
