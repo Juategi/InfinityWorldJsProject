@@ -5,23 +5,40 @@ import { Color3 } from '@babylonjs/core/Maths/math.color'
 import { Vector3 } from '@babylonjs/core/Maths/math.vector'
 import type { Mesh } from '@babylonjs/core/Meshes/mesh'
 
+export type BuildingCategory = 'buildings' | 'nature' | 'decor'
+
 export interface BuildingType {
   id: string
   name: string
   icon: string
+  category: BuildingCategory
   sizeX: number
   sizeZ: number
   height: number
   cost: number
   color: Color3
+  isNew?: boolean
 }
 
 // Definición de tipos de edificios
 export const BUILDING_TYPES: Record<string, BuildingType> = {
+  // === BUILDINGS ===
+  stoneCottage: {
+    id: 'stoneCottage',
+    name: 'Stone Cottage',
+    icon: '🏠',
+    category: 'buildings',
+    sizeX: 2,
+    sizeZ: 2,
+    height: 2,
+    cost: 500,
+    color: new Color3(0.6, 0.5, 0.4)
+  },
   townhall: {
     id: 'townhall',
-    name: 'Ayuntamiento',
+    name: 'Town Hall',
     icon: '🏛️',
+    category: 'buildings',
     sizeX: 4,
     sizeZ: 4,
     height: 3,
@@ -30,8 +47,9 @@ export const BUILDING_TYPES: Record<string, BuildingType> = {
   },
   goldmine: {
     id: 'goldmine',
-    name: 'Mina de Oro',
+    name: 'Gold Mine',
     icon: '⛏️',
+    category: 'buildings',
     sizeX: 3,
     sizeZ: 3,
     height: 1.5,
@@ -40,8 +58,9 @@ export const BUILDING_TYPES: Record<string, BuildingType> = {
   },
   storage: {
     id: 'storage',
-    name: 'Almacén',
+    name: 'Storage',
     icon: '🏪',
+    category: 'buildings',
     sizeX: 3,
     sizeZ: 3,
     height: 2,
@@ -50,8 +69,9 @@ export const BUILDING_TYPES: Record<string, BuildingType> = {
   },
   barracks: {
     id: 'barracks',
-    name: 'Cuartel',
+    name: 'Barracks',
     icon: '⚔️',
+    category: 'buildings',
     sizeX: 3,
     sizeZ: 3,
     height: 2.5,
@@ -60,8 +80,9 @@ export const BUILDING_TYPES: Record<string, BuildingType> = {
   },
   wall: {
     id: 'wall',
-    name: 'Muro',
+    name: 'Wall',
     icon: '🧱',
+    category: 'buildings',
     sizeX: 1,
     sizeZ: 1,
     height: 1.2,
@@ -70,13 +91,108 @@ export const BUILDING_TYPES: Record<string, BuildingType> = {
   },
   tower: {
     id: 'tower',
-    name: 'Torre',
+    name: 'Tower',
     icon: '🗼',
+    category: 'buildings',
     sizeX: 2,
     sizeZ: 2,
     height: 4,
     cost: 300,
     color: new Color3(0.4, 0.4, 0.5)
+  },
+
+  // === NATURE ===
+  oakTree: {
+    id: 'oakTree',
+    name: 'Oak Tree',
+    icon: '🌳',
+    category: 'nature',
+    sizeX: 1,
+    sizeZ: 1,
+    height: 3,
+    cost: 150,
+    color: new Color3(0.2, 0.5, 0.2)
+  },
+  pineTree: {
+    id: 'pineTree',
+    name: 'Pine Tree',
+    icon: '🌲',
+    category: 'nature',
+    sizeX: 1,
+    sizeZ: 1,
+    height: 3.5,
+    cost: 120,
+    color: new Color3(0.1, 0.4, 0.2)
+  },
+  bush: {
+    id: 'bush',
+    name: 'Bush',
+    icon: '🌿',
+    category: 'nature',
+    sizeX: 1,
+    sizeZ: 1,
+    height: 0.8,
+    cost: 50,
+    color: new Color3(0.3, 0.6, 0.3)
+  },
+  flowerBed: {
+    id: 'flowerBed',
+    name: 'Flower Bed',
+    icon: '🌸',
+    category: 'nature',
+    sizeX: 1,
+    sizeZ: 1,
+    height: 0.3,
+    cost: 75,
+    color: new Color3(0.9, 0.5, 0.6)
+  },
+
+  // === DECOR ===
+  fountain: {
+    id: 'fountain',
+    name: 'Fountain',
+    icon: '⛲',
+    category: 'decor',
+    sizeX: 2,
+    sizeZ: 2,
+    height: 1.5,
+    cost: 300,
+    color: new Color3(0.6, 0.7, 0.8),
+    isNew: true
+  },
+  statue: {
+    id: 'statue',
+    name: 'Statue',
+    icon: '🗿',
+    category: 'decor',
+    sizeX: 1,
+    sizeZ: 1,
+    height: 2,
+    cost: 250,
+    color: new Color3(0.7, 0.7, 0.7)
+  },
+  bench: {
+    id: 'bench',
+    name: 'Bench',
+    icon: '🪑',
+    category: 'decor',
+    sizeX: 1,
+    sizeZ: 1,
+    height: 0.5,
+    cost: 80,
+    color: new Color3(0.5, 0.3, 0.2)
+  },
+  lamp: {
+    id: 'lamp',
+    name: 'Street Lamp',
+    icon: '🏮',
+    category: 'decor',
+    sizeX: 1,
+    sizeZ: 1,
+    height: 2.5,
+    cost: 100,
+    color: new Color3(0.3, 0.3, 0.3),
+    isNew: true
   }
 }
 

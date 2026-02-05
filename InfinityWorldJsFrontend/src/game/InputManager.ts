@@ -10,7 +10,6 @@ import { BuildingManager } from './BuildingManager'
 export class InputManager {
   private scene: Scene
   private camera: ArcRotateCamera
-  private grid: Grid
   private buildingManager: BuildingManager
   private isDragging: boolean = false
   private lastPointerPos: { x: number; y: number } | null = null
@@ -19,12 +18,11 @@ export class InputManager {
   constructor(
     scene: Scene,
     camera: ArcRotateCamera,
-    grid: Grid,
+    _grid: Grid,
     buildingManager: BuildingManager
   ) {
     this.scene = scene
     this.camera = camera
-    this.grid = grid
     this.buildingManager = buildingManager
 
     // Plano del suelo en Y=0
@@ -50,7 +48,7 @@ export class InputManager {
   }
 
   // Calcular posición en el ground usando ray-plane intersection
-  private getGroundPosition(pointerInfo: PointerInfo): Vector3 | null {
+  private getGroundPosition(_pointerInfo: PointerInfo): Vector3 | null {
     const ray = this.scene.createPickingRay(
       this.scene.pointerX,
       this.scene.pointerY,

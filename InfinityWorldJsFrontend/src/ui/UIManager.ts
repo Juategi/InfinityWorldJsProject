@@ -1,6 +1,6 @@
 import { Game } from '../game/Game'
 import { BuildingManager } from '../game/BuildingManager'
-import type { BuildingType } from '../game/Building'
+import type { BuildingType, BuildingCategory } from '../game/Building'
 
 export class UIManager {
   private game: Game
@@ -8,10 +8,13 @@ export class UIManager {
   // Elementos del DOM
   private goldDisplay!: HTMLElement
   private gemsDisplay!: HTMLElement
-  private buildBtn!: HTMLElement
-  private buildModal!: HTMLElement
-  private buildList!: HTMLElement
-  private closeBuildModalBtn!: HTMLElement
+  private buildItems!: HTMLElement
+  private buildTabs!: NodeListOf<HTMLElement>
+  private buildModeBtn!: HTMLElement
+  private toast!: HTMLElement
+
+  // Estado actual
+  private currentCategory: BuildingCategory = 'buildings'
 
   constructor(game: Game) {
     this.game = game
@@ -27,28 +30,45 @@ export class UIManager {
   private cacheElements(): void {
     this.goldDisplay = document.querySelector('#resource-gold .resource-value')!
     this.gemsDisplay = document.querySelector('#resource-gems .resource-value')!
-    this.buildBtn = document.getElementById('btn-build')!
-    this.buildModal = document.getElementById('build-modal')!
-    this.buildList = document.getElementById('build-list')!
-    this.closeBuildModalBtn = document.getElementById('close-build-modal')!
+    this.buildItems = document.getElementById('build-items')!
+    this.buildTabs = document.querySelectorAll('.build-tab')!
+    this.buildModeBtn = document.getElementById('btn-build-mode')!
+    this.toast = document.getElementById('toast')!
   }
 
   private setupEventListeners(): void {
-    // Botón de construcción
-    this.buildBtn.addEventListener('click', () => {
-      this.showBuildModal()
+    // Tabs de categorías
+    this.buildTabs.forEach(tab => {
+      tab.addEventListener('click', () => {
+        const category = tab.getAttribute('data-category') as BuildingCategory
+        if (category) {
+          this.setActiveCategory(category)
+        }
+      })
     })
 
-    // Cerrar modal
-    this.closeBuildModalBtn.addEventListener('click', () => {
-      this.hideBuildModal()
-    })
-
-    // Click fuera del modal para cerrar
-    this.buildModal.addEventListener('click', (e) => {
-      if (e.target === this.buildModal) {
-        this.hideBuildModal()
+    // Botón principal de construcción
+    this.buildModeBtn.addEventListener('click', () => {
+      if (this.game.getBuildingManager().isInBuildMode()) {
+        this.game.getBuildingManager().cancelBuildMode()
       }
+    })
+
+    // Herramientas de edición
+    document.getElementById('btn-move')?.addEventListener('click', () => {
+      this.showToast('Move mode - Coming soon!')
+    })
+
+    document.getElementById('btn-rotate')?.addEventListener('click', () => {
+      this.showToast('Rotate mode - Coming soon!')
+    })
+
+    document.getElementById('btn-info')?.addEventListener('click', () => {
+      this.showToast('Info mode - Coming soon!')
+    })
+
+    document.getElementById('btn-delete')?.addEventListener('click', () => {
+      this.showToast('Delete mode - Coming soon!')
     })
 
     // Escuchar eventos del juego
@@ -67,13 +87,12 @@ export class UIManager {
 
     document.addEventListener('buildingPlaced', ((e: CustomEvent) => {
       const building = e.detail
-      // Gastar recursos
       this.game.spendGold(building.type.cost)
+      this.updateBuildingAvailability()
     }) as EventListener)
 
     document.addEventListener('buildingSelected', ((e: CustomEvent) => {
       console.log('Edificio seleccionado:', e.detail)
-      // Aquí se puede mostrar un panel de info del edificio
     }) as EventListener)
 
     // Tecla Escape para cancelar construcción
@@ -82,6 +101,22 @@ export class UIManager {
         this.game.getBuildingManager().cancelBuildMode()
       }
     })
+  }
+
+  private setActiveCategory(category: BuildingCategory): void {
+    this.currentCategory = category
+
+    // Actualizar tabs
+    this.buildTabs.forEach(tab => {
+      if (tab.getAttribute('data-category') === category) {
+        tab.classList.add('active')
+      } else {
+        tab.classList.remove('active')
+      }
+    })
+
+    // Actualizar lista de edificios
+    this.populateBuildingList()
   }
 
   private updateResourceDisplay(): void {
@@ -94,65 +129,29 @@ export class UIManager {
       return (num / 1000000).toFixed(1) + 'M'
     }
     if (num >= 1000) {
-      return (num / 1000).toFixed(1) + 'K'
+      return num.toLocaleString()
     }
     return num.toString()
   }
 
   private populateBuildingList(): void {
-    const buildings = BuildingManager.getBuildingTypes()
+    const allBuildings = BuildingManager.getBuildingTypes()
+    const buildings = allBuildings.filter(b => b.category === this.currentCategory)
 
-    this.buildList.innerHTML = buildings.map(building => `
-      <button class="build-item" data-building-type="${building.id}">
-        <span class="build-item-icon">${building.icon}</span>
+    this.buildItems.innerHTML = buildings.map(building => `
+      <button class="build-item ${this.game.state.gold < building.cost ? 'disabled' : ''}" data-building-type="${building.id}">
+        ${building.isNew ? '<span class="build-item-badge">NEW</span>' : ''}
+        <div class="build-item-icon">${building.icon}</div>
         <span class="build-item-name">${building.name}</span>
-        <span class="build-item-cost">💰 ${building.cost}</span>
+        <div class="build-item-cost">
+          <div class="cost-icon"></div>
+          <span>${building.cost}</span>
+        </div>
       </button>
     `).join('')
 
-    // Agregar estilos inline para los items
-    const style = document.createElement('style')
-    style.textContent = `
-      .build-item {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        gap: 4px;
-        padding: 12px 8px;
-        background: #3a3a3a;
-        border: 2px solid #555;
-        border-radius: 8px;
-        color: white;
-        cursor: pointer;
-        transition: all 0.15s;
-      }
-      .build-item:hover {
-        background: #4a4a4a;
-        border-color: #4CAF50;
-      }
-      .build-item:active {
-        transform: scale(0.95);
-      }
-      .build-item-icon {
-        font-size: 28px;
-      }
-      .build-item-name {
-        font-size: 11px;
-        font-weight: 600;
-      }
-      .build-item-cost {
-        font-size: 10px;
-        color: #ffd700;
-      }
-      .build-item.disabled {
-        opacity: 0.5;
-        pointer-events: none;
-      }
-    `
-    document.head.appendChild(style)
-
     // Event listeners para cada item
-    this.buildList.querySelectorAll('.build-item').forEach(btn => {
+    this.buildItems.querySelectorAll('.build-item').forEach(btn => {
       btn.addEventListener('click', () => {
         const typeId = btn.getAttribute('data-building-type')
         if (typeId) {
@@ -170,25 +169,15 @@ export class UIManager {
 
     // Verificar si tiene suficiente oro
     if (this.game.state.gold < building.cost) {
-      this.showToast('No tienes suficiente oro')
+      this.showToast('Not enough gold!')
       return
     }
 
-    this.hideBuildModal()
     this.game.getBuildingManager().startBuildMode(typeId)
   }
 
-  private showBuildModal(): void {
-    this.buildModal.classList.remove('hidden')
-    this.updateBuildingAvailability()
-  }
-
-  private hideBuildModal(): void {
-    this.buildModal.classList.add('hidden')
-  }
-
   private updateBuildingAvailability(): void {
-    const buttons = this.buildList.querySelectorAll('.build-item')
+    const buttons = this.buildItems.querySelectorAll('.build-item')
     const buildings = BuildingManager.getBuildingTypes()
 
     buttons.forEach(btn => {
@@ -204,62 +193,22 @@ export class UIManager {
   }
 
   private onBuildModeStart(buildingType: BuildingType): void {
-    // Mostrar indicador de modo construcción
-    this.buildBtn.innerHTML = `
-      <span>❌</span>
-      <span>Cancelar</span>
-    `
-    this.buildBtn.style.background = 'linear-gradient(180deg, #f44336 0%, #c62828 100%)'
-
-    // Cambiar comportamiento del botón
-    this.buildBtn.onclick = () => {
-      this.game.getBuildingManager().cancelBuildMode()
-    }
-
-    this.showToast(`Toca para colocar: ${buildingType.name}`)
+    // Activar botón de construcción
+    this.buildModeBtn.classList.add('active')
+    this.showToast(`Tap to place: ${buildingType.name}`)
   }
 
   private onBuildModeEnd(): void {
-    // Restaurar botón
-    this.buildBtn.innerHTML = `
-      <span>🏗️</span>
-      <span>Construir</span>
-    `
-    this.buildBtn.style.background = 'linear-gradient(180deg, #4CAF50 0%, #388E3C 100%)'
-
-    this.buildBtn.onclick = () => {
-      this.showBuildModal()
-    }
+    // Desactivar botón de construcción
+    this.buildModeBtn.classList.remove('active')
   }
 
   private showToast(message: string): void {
-    // Crear toast si no existe
-    let toast = document.getElementById('toast')
-    if (!toast) {
-      toast = document.createElement('div')
-      toast.id = 'toast'
-      toast.style.cssText = `
-        position: fixed;
-        bottom: 100px;
-        left: 50%;
-        transform: translateX(-50%);
-        background: rgba(0, 0, 0, 0.8);
-        color: white;
-        padding: 12px 24px;
-        border-radius: 8px;
-        font-size: 14px;
-        z-index: 1000;
-        opacity: 0;
-        transition: opacity 0.3s;
-      `
-      document.body.appendChild(toast)
-    }
-
-    toast.textContent = message
-    toast.style.opacity = '1'
+    this.toast.textContent = message
+    this.toast.classList.add('visible')
 
     setTimeout(() => {
-      toast.style.opacity = '0'
+      this.toast.classList.remove('visible')
     }, 2000)
   }
 }
