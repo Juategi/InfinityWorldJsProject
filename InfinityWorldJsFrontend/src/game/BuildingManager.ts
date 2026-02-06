@@ -23,8 +23,8 @@ export class BuildingManager {
     const offsetZ = parcelWorldZ - this.worldOffsetZ
 
     for (const building of this.buildings.values()) {
-      const currentPos = building.mesh.position
-      building.mesh.position = new Vector3(
+      const currentPos = building.rootNode.position
+      building.rootNode.position = new Vector3(
         currentPos.x - offsetX,
         currentPos.y,
         currentPos.z - offsetZ
@@ -38,8 +38,8 @@ export class BuildingManager {
   // Trasladar todos los edificios a coordenadas del mundo
   toWorldCoordinates(): void {
     for (const building of this.buildings.values()) {
-      const currentPos = building.mesh.position
-      building.mesh.position = new Vector3(
+      const currentPos = building.rootNode.position
+      building.rootNode.position = new Vector3(
         currentPos.x + this.worldOffsetX,
         currentPos.y,
         currentPos.z + this.worldOffsetZ
@@ -53,7 +53,7 @@ export class BuildingManager {
   // Mostrar/ocultar todos los edificios
   setVisible(visible: boolean): void {
     for (const building of this.buildings.values()) {
-      building.mesh.setEnabled(visible)
+      building.rootNode.setEnabled(visible)
     }
   }
 
