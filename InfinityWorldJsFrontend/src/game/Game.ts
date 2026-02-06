@@ -8,7 +8,9 @@ import { Color3, Color4 } from '@babylonjs/core/Maths/math.color'
 import { Grid } from './Grid'
 import { BuildingManager } from './BuildingManager'
 import { InputManager } from './InputManager'
-import type { GameState } from '../types/GameState'
+import { ParcelManager } from './ParcelManager'
+import type { GameState, GameMode, Parcel } from '../types'
+import { WORLD_CONFIG } from '../config/world'
 
 export class Game {
   private canvas: HTMLCanvasElement
@@ -18,6 +20,11 @@ export class Game {
   private grid!: Grid
   private buildingManager!: BuildingManager
   private inputManager!: InputManager
+  private parcelManager!: ParcelManager
+
+  private currentMode: GameMode = 'world'
+  private editingParcel: Parcel | null = null
+  private savedCameraPosition: Vector3 | null = null
 
   public state: GameState = {
     gold: 1000,
@@ -46,23 +53,121 @@ export class Game {
     this.setupCamera()
     this.setupLighting()
 
-    // Inicializar sistemas
-    this.grid = new Grid(this.scene, 100, 100)
+    // Inicializar sistema de parcelas (modo mundo)
+    this.parcelManager = new ParcelManager(this.scene)
+    await this.parcelManager.loadParcelsAround(0, 0)
+
+    // Callback cuando se hace clic en icono de edición
+    this.parcelManager.onEditParcel((parcel) => {
+      this.enterEditMode(parcel)
+    })
+
+    // Inicializar Grid para modo edición (oculto inicialmente)
+    this.grid = new Grid(this.scene, WORLD_CONFIG.PARCEL_SIZE, WORLD_CONFIG.PARCEL_SIZE)
     this.buildingManager = new BuildingManager(this.scene, this.grid)
     this.inputManager = new InputManager(this.scene, this.camera, this.grid, this.buildingManager)
 
-    // Crear terreno inicial
+    // Grid oculto en modo mundo
+    this.grid.setVisible(false)
+
+    // Actualizar parcelas según movimiento de cámara (solo en modo mundo)
+    this.scene.onBeforeRenderObservable.add(() => {
+      if (this.currentMode === 'world') {
+        this.parcelManager.updateFromCameraPosition(this.camera.target)
+      }
+    })
+  }
+
+  enterEditMode(parcel: Parcel): void {
+    if (this.currentMode === 'edit') return
+
+    this.currentMode = 'edit'
+    this.editingParcel = parcel
+
+    // Guardar posición de cámara
+    this.savedCameraPosition = this.camera.target.clone()
+
+    // Ocultar parcelas del mundo
+    this.parcelManager.setVisible(false)
+
+    // Calcular offset de la parcela en coordenadas del mundo
+    const parcelWorldX = parcel.x * WORLD_CONFIG.PARCEL_SIZE
+    const parcelWorldZ = parcel.y * WORLD_CONFIG.PARCEL_SIZE
+
+    // Mover edificios a coordenadas locales (0-100)
+    this.buildingManager.toLocalCoordinates(parcelWorldX, parcelWorldZ)
+
+    // Mostrar grid para edición
+    this.grid.setVisible(true)
     this.grid.createGround()
+
+    // Centrar cámara en el centro del grid (50, 50)
+    const gridCenter = WORLD_CONFIG.PARCEL_SIZE / 2
+    this.camera.target = new Vector3(gridCenter, 0, gridCenter)
+    this.camera.radius = 80
+
+    // Emitir evento para UI
+    document.dispatchEvent(new CustomEvent('gameModeChange', {
+      detail: { mode: 'edit', parcel }
+    }))
+  }
+
+  exitEditMode(): void {
+    if (this.currentMode === 'world') return
+
+    const parcel = this.editingParcel
+
+    this.currentMode = 'world'
+    this.editingParcel = null
+
+    // Ocultar grid
+    this.grid.setVisible(false)
+
+    // Mover edificios a coordenadas del mundo
+    this.buildingManager.toWorldCoordinates()
+
+    // Mostrar parcelas del mundo
+    this.parcelManager.setVisible(true)
+
+    // Restaurar posición de cámara (al centro de la parcela editada)
+    if (parcel) {
+      const parcelCenterX = parcel.x * WORLD_CONFIG.PARCEL_SIZE + WORLD_CONFIG.PARCEL_SIZE / 2
+      const parcelCenterZ = parcel.y * WORLD_CONFIG.PARCEL_SIZE + WORLD_CONFIG.PARCEL_SIZE / 2
+      this.camera.target = new Vector3(parcelCenterX, 0, parcelCenterZ)
+    } else if (this.savedCameraPosition) {
+      this.camera.target = this.savedCameraPosition
+    }
+    this.camera.radius = 80
+
+    // Emitir evento para UI
+    document.dispatchEvent(new CustomEvent('gameModeChange', {
+      detail: { mode: 'world', parcel: null }
+    }))
+  }
+
+  getMode(): GameMode {
+    return this.currentMode
+  }
+
+  getEditingParcel(): Parcel | null {
+    return this.editingParcel
   }
 
   private setupCamera(): void {
+    // Centro de la parcela (0,0)
+    const initialTarget = new Vector3(
+      WORLD_CONFIG.PARCEL_SIZE / 2,
+      0,
+      WORLD_CONFIG.PARCEL_SIZE / 2
+    )
+
     // Cámara isométrica estilo Clash of Clans
     this.camera = new ArcRotateCamera(
       'camera',
       -Math.PI / 4,      // Alpha: rotación horizontal (45 grados)
       Math.PI / 3,       // Beta: ángulo vertical (~60 grados desde arriba)
-      30,                // Radio: distancia
-      Vector3.Zero(),    // Target: centro del mundo
+      80,                // Radio: distancia
+      initialTarget,     // Target: centro de parcela (0,0)
       this.scene
     )
 
@@ -182,7 +287,12 @@ export class Game {
     return false
   }
 
+  getParcelManager(): ParcelManager {
+    return this.parcelManager
+  }
+
   dispose(): void {
+    this.parcelManager.dispose()
     this.engine.dispose()
   }
 }

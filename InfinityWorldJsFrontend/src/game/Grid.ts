@@ -44,7 +44,15 @@ export class Grid {
   }
 
   createGround(): void {
-    // Crear terreno principal
+    // Dispose si ya existe
+    if (this.ground) {
+      this.ground.dispose()
+    }
+    if (this.gridLines) {
+      this.gridLines.dispose()
+    }
+
+    // Crear terreno con origen en (0,0) - esquina inferior izquierda
     this.ground = MeshBuilder.CreateGround(
       'ground',
       {
@@ -55,6 +63,10 @@ export class Grid {
       this.scene
     )
 
+    // Posicionar para que origen esté en esquina (0,0)
+    this.ground.position.x = (this.width * this.cellSize) / 2
+    this.ground.position.z = (this.height * this.cellSize) / 2
+
     // Material del terreno (césped)
     const groundMaterial = new StandardMaterial('groundMaterial', this.scene)
     groundMaterial.diffuseColor = new Color3(0.3, 0.5, 0.2)
@@ -64,28 +76,28 @@ export class Grid {
     // Asegurar que el ground sea pickable
     this.ground.isPickable = true
 
-    // Crear líneas de grid (opcionales, para debug/ayuda visual)
+    // Crear líneas de grid
     this.createGridLines()
   }
 
   private createGridLines(): void {
     const lines: Vector3[][] = []
 
-    // Líneas verticales
+    // Líneas verticales (origen en 0)
     for (let x = 0; x <= this.width; x++) {
-      const xPos = x * this.cellSize - (this.width * this.cellSize) / 2
+      const xPos = x * this.cellSize
       lines.push([
-        new Vector3(xPos, 0.01, -(this.height * this.cellSize) / 2),
-        new Vector3(xPos, 0.01, (this.height * this.cellSize) / 2)
+        new Vector3(xPos, 0.01, 0),
+        new Vector3(xPos, 0.01, this.height * this.cellSize)
       ])
     }
 
-    // Líneas horizontales
+    // Líneas horizontales (origen en 0)
     for (let z = 0; z <= this.height; z++) {
-      const zPos = z * this.cellSize - (this.height * this.cellSize) / 2
+      const zPos = z * this.cellSize
       lines.push([
-        new Vector3(-(this.width * this.cellSize) / 2, 0.01, zPos),
-        new Vector3((this.width * this.cellSize) / 2, 0.01, zPos)
+        new Vector3(0, 0.01, zPos),
+        new Vector3(this.width * this.cellSize, 0.01, zPos)
       ])
     }
 
@@ -98,13 +110,10 @@ export class Grid {
     this.gridLines.alpha = 0.3
   }
 
-  // Convertir posición del mundo a celda del grid
+  // Convertir posición del mundo a celda del grid (origen en 0,0)
   worldToGrid(worldPos: Vector3): { x: number; z: number } | null {
-    const offsetX = (this.width * this.cellSize) / 2
-    const offsetZ = (this.height * this.cellSize) / 2
-
-    const gridX = Math.floor((worldPos.x + offsetX) / this.cellSize)
-    const gridZ = Math.floor((worldPos.z + offsetZ) / this.cellSize)
+    const gridX = Math.floor(worldPos.x / this.cellSize)
+    const gridZ = Math.floor(worldPos.z / this.cellSize)
 
     if (gridX >= 0 && gridX < this.width && gridZ >= 0 && gridZ < this.height) {
       return { x: gridX, z: gridZ }
@@ -112,15 +121,12 @@ export class Grid {
     return null
   }
 
-  // Convertir celda del grid a posición del mundo
+  // Convertir celda del grid a posición del mundo (origen en 0,0)
   gridToWorld(gridX: number, gridZ: number, sizeX: number = 1, sizeZ: number = 1): Vector3 {
-    const offsetX = (this.width * this.cellSize) / 2
-    const offsetZ = (this.height * this.cellSize) / 2
-
     return new Vector3(
-      (gridX + sizeX / 2) * this.cellSize - offsetX,
+      (gridX + sizeX / 2) * this.cellSize,
       0,
-      (gridZ + sizeZ / 2) * this.cellSize - offsetZ
+      (gridZ + sizeZ / 2) * this.cellSize
     )
   }
 
@@ -176,6 +182,26 @@ export class Grid {
   }
 
   showGridLines(visible: boolean): void {
-    this.gridLines.isVisible = visible
+    if (this.gridLines) {
+      this.gridLines.isVisible = visible
+    }
+  }
+
+  setVisible(visible: boolean): void {
+    if (this.ground) {
+      this.ground.setEnabled(visible)
+    }
+    if (this.gridLines) {
+      this.gridLines.setEnabled(visible)
+    }
+  }
+
+  dispose(): void {
+    if (this.ground) {
+      this.ground.dispose()
+    }
+    if (this.gridLines) {
+      this.gridLines.dispose()
+    }
   }
 }

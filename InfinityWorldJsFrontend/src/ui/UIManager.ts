@@ -1,6 +1,7 @@
 import { Game } from '../game/Game'
 import { BuildingManager } from '../game/BuildingManager'
 import type { BuildingType, BuildingCategory } from '../game/Building'
+import type { GameMode } from '../types'
 
 export class UIManager {
   private game: Game
@@ -12,6 +13,8 @@ export class UIManager {
   private buildTabs!: NodeListOf<HTMLElement>
   private buildModeBtn!: HTMLElement
   private toast!: HTMLElement
+  private buildPanel!: HTMLElement
+  private exitEditBtn!: HTMLElement | null
 
   // Estado actual
   private currentCategory: BuildingCategory = 'buildings'
@@ -22,9 +25,15 @@ export class UIManager {
 
   init(): void {
     this.cacheElements()
+    this.createEditModeUI()
     this.setupEventListeners()
     this.updateResourceDisplay()
     this.populateBuildingList()
+
+    // Estado inicial: modo mundo (ocultar panel de construcción)
+    if (this.buildPanel) {
+      this.buildPanel.style.display = 'none'
+    }
   }
 
   private cacheElements(): void {
@@ -34,6 +43,38 @@ export class UIManager {
     this.buildTabs = document.querySelectorAll('.build-tab')!
     this.buildModeBtn = document.getElementById('btn-build-mode')!
     this.toast = document.getElementById('toast')!
+    this.buildPanel = document.getElementById('build-panel')!
+  }
+
+  private createEditModeUI(): void {
+    // Crear botón de salir del modo edición
+    const exitBtn = document.createElement('button')
+    exitBtn.id = 'btn-exit-edit'
+    exitBtn.className = 'exit-edit-btn'
+    exitBtn.innerHTML = '← Back to World'
+    exitBtn.style.cssText = `
+      position: fixed;
+      top: 20px;
+      left: 20px;
+      padding: 12px 24px;
+      background: linear-gradient(180deg, #ff6b6b 0%, #ee5a5a 100%);
+      border: 2px solid #cc4444;
+      border-radius: 8px;
+      color: white;
+      font-weight: bold;
+      font-size: 16px;
+      cursor: pointer;
+      display: none;
+      z-index: 1000;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+    `
+    document.body.appendChild(exitBtn)
+    this.exitEditBtn = exitBtn
+
+    // Event listener
+    exitBtn.addEventListener('click', () => {
+      this.game.exitEditMode()
+    })
   }
 
   private setupEventListeners(): void {
@@ -95,12 +136,43 @@ export class UIManager {
       console.log('Edificio seleccionado:', e.detail)
     }) as EventListener)
 
-    // Tecla Escape para cancelar construcción
+    // Tecla Escape para cancelar construcción o salir de modo edición
     document.addEventListener('keydown', (e) => {
       if (e.key === 'Escape') {
-        this.game.getBuildingManager().cancelBuildMode()
+        if (this.game.getMode() === 'edit') {
+          this.game.exitEditMode()
+        } else {
+          this.game.getBuildingManager().cancelBuildMode()
+        }
       }
     })
+
+    // Escuchar cambios de modo
+    document.addEventListener('gameModeChange', ((e: CustomEvent<{ mode: GameMode }>) => {
+      this.onModeChange(e.detail.mode)
+    }) as EventListener)
+  }
+
+  private onModeChange(mode: GameMode): void {
+    if (mode === 'edit') {
+      // Mostrar UI de edición
+      if (this.exitEditBtn) {
+        this.exitEditBtn.style.display = 'block'
+      }
+      if (this.buildPanel) {
+        this.buildPanel.style.display = 'block'
+      }
+      this.showToast('Edit Mode - Build your parcel!')
+    } else {
+      // Ocultar UI de edición
+      if (this.exitEditBtn) {
+        this.exitEditBtn.style.display = 'none'
+      }
+      if (this.buildPanel) {
+        this.buildPanel.style.display = 'none'
+      }
+      this.showToast('World Mode - Click a parcel icon to edit')
+    }
   }
 
   private setActiveCategory(category: BuildingCategory): void {

@@ -9,10 +9,57 @@ export class BuildingManager {
   private buildings: Map<string, Building> = new Map()
   private previewBuilding: Building | null = null
   private currentBuildType: BuildingType | null = null
+  private worldOffsetX: number = 0
+  private worldOffsetZ: number = 0
 
   constructor(scene: Scene, grid: Grid) {
     this.scene = scene
     this.grid = grid
+  }
+
+  // Trasladar todos los edificios a coordenadas locales (para modo edición)
+  toLocalCoordinates(parcelWorldX: number, parcelWorldZ: number): void {
+    const offsetX = parcelWorldX - this.worldOffsetX
+    const offsetZ = parcelWorldZ - this.worldOffsetZ
+
+    for (const building of this.buildings.values()) {
+      const currentPos = building.mesh.position
+      building.mesh.position = new Vector3(
+        currentPos.x - offsetX,
+        currentPos.y,
+        currentPos.z - offsetZ
+      )
+    }
+
+    this.worldOffsetX = parcelWorldX
+    this.worldOffsetZ = parcelWorldZ
+  }
+
+  // Trasladar todos los edificios a coordenadas del mundo
+  toWorldCoordinates(): void {
+    for (const building of this.buildings.values()) {
+      const currentPos = building.mesh.position
+      building.mesh.position = new Vector3(
+        currentPos.x + this.worldOffsetX,
+        currentPos.y,
+        currentPos.z + this.worldOffsetZ
+      )
+    }
+
+    this.worldOffsetX = 0
+    this.worldOffsetZ = 0
+  }
+
+  // Mostrar/ocultar todos los edificios
+  setVisible(visible: boolean): void {
+    for (const building of this.buildings.values()) {
+      building.mesh.setEnabled(visible)
+    }
+  }
+
+  // Obtener el offset actual
+  getWorldOffset(): { x: number; z: number } {
+    return { x: this.worldOffsetX, z: this.worldOffsetZ }
   }
 
   // Iniciar modo construcción
