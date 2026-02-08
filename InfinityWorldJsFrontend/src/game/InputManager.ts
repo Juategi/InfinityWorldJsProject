@@ -81,11 +81,15 @@ export class InputManager {
       }
     }
 
-    // Actualizar preview en modo construcción
-    if (this.buildingManager.isInBuildMode()) {
+    // Actualizar preview en modo construcción o move
+    if (this.buildingManager.isInBuildMode() || this.buildingManager.isInMoveMode()) {
       const groundPos = this.getGroundPosition(pointerInfo)
       if (groundPos) {
-        this.buildingManager.updatePreview(groundPos)
+        if (this.buildingManager.isInMoveMode()) {
+          this.buildingManager.updateMovePreview(groundPos)
+        } else {
+          this.buildingManager.updatePreview(groundPos)
+        }
       }
     }
   }
@@ -101,6 +105,16 @@ export class InputManager {
   }
 
   private handleTap(pointerInfo: PointerInfo): void {
+    // En modo move: confirmar movimiento
+    if (this.buildingManager.isInMoveMode()) {
+      const groundPos = this.getGroundPosition(pointerInfo)
+      if (groundPos) {
+        this.buildingManager.updateMovePreview(groundPos)
+        this.buildingManager.confirmMove()
+      }
+      return
+    }
+
     // En modo construcción: colocar edificio
     if (this.buildingManager.isInBuildMode()) {
       const groundPos = this.getGroundPosition(pointerInfo)
@@ -111,19 +125,18 @@ export class InputManager {
       return
     }
 
-    // En modo normal: seleccionar edificios
+    // En modo normal: seleccionar/deseleccionar edificios
     const pickInfo = pointerInfo.pickInfo
     if (pickInfo?.hit && pickInfo.pickedMesh) {
       const metadata = pickInfo.pickedMesh.metadata
       if (metadata?.buildingId) {
-        document.dispatchEvent(new CustomEvent('buildingSelected', {
-          detail: {
-            buildingId: metadata.buildingId,
-            type: metadata.type
-          }
-        }))
+        this.buildingManager.selectBuilding(metadata.buildingId)
+        return
       }
     }
+
+    // Tap en vacío: deseleccionar
+    this.buildingManager.deselectBuilding()
   }
 
   // Obtener posición del mundo desde coordenadas de pantalla

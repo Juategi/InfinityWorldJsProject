@@ -1,10 +1,12 @@
 import { Scene } from '@babylonjs/core/scene'
 import { MeshBuilder } from '@babylonjs/core/Meshes/meshBuilder'
 import { StandardMaterial } from '@babylonjs/core/Materials/standardMaterial'
-import { Color3 } from '@babylonjs/core/Maths/math.color'
+import { Color3, Color4 } from '@babylonjs/core/Maths/math.color'
 import { Vector3 } from '@babylonjs/core/Maths/math.vector'
 import { TransformNode } from '@babylonjs/core/Meshes/transformNode'
 import { SceneLoader } from '@babylonjs/core/Loading/sceneLoader'
+import { ParticleSystem } from '@babylonjs/core/Particles/particleSystem'
+import { Texture } from '@babylonjs/core/Materials/Textures/texture'
 import type { Mesh } from '@babylonjs/core/Meshes/mesh'
 import type { AbstractMesh } from '@babylonjs/core/Meshes/abstractMesh'
 import '@babylonjs/loaders/glTF'
@@ -24,6 +26,7 @@ export interface BuildingType {
   isNew?: boolean
   modelFile?: string
   modelScale?: number
+  smokeOffset?: { x: number; y: number; z: number }
 }
 
 // Definición de tipos de edificios
@@ -214,7 +217,8 @@ export const BUILDING_TYPES: Record<string, BuildingType> = {
     color: new Color3(0.7, 0.5, 0.3),
     isNew: true,
     modelFile: '/models/whimsical_cottage.glb',
-    modelScale: 1
+    modelScale: 1,
+    smokeOffset: { x: 0.8, y: 3.2, z: 0.5 }
   }
 }
 
@@ -223,6 +227,7 @@ export class Building {
   public type: BuildingType
   public gridX: number
   public gridZ: number
+  public rotation: number = 0
   public mesh: Mesh
   public rootNode: TransformNode
   private scene: Scene
@@ -232,6 +237,7 @@ export class Building {
   private previewMaterial: StandardMaterial | null = null
   private footprintMesh: Mesh | null = null
   private footprintMaterial: StandardMaterial | null = null
+  private smokeSystem: ParticleSystem | null = null
 
   constructor(scene: Scene, type: BuildingType, gridX: number, gridZ: number, worldPos: Vector3) {
     this.scene = scene
@@ -322,13 +328,95 @@ export class Building {
 
       // Ocultar placeholder, mostrar modelo
       this.mesh.isVisible = false
+
+      // Crear efecto de humo si tiene smokeOffset
+      if (this.type.smokeOffset) {
+        this.createSmoke(this.type.smokeOffset)
+      }
     } catch (error) {
       console.warn(`Error cargando modelo ${modelFile}, usando placeholder:`, error)
     }
   }
 
+  private createSmoke(offset: { x: number; y: number; z: number }): void {
+    const smoke = new ParticleSystem(`${this.id}_smoke`, 80, this.scene)
+
+    // Textura procedural: círculo blanco con gradiente
+    const texSize = 64
+    const canvas = document.createElement('canvas')
+    canvas.width = texSize
+    canvas.height = texSize
+    const ctx = canvas.getContext('2d')!
+    const gradient = ctx.createRadialGradient(texSize / 2, texSize / 2, 0, texSize / 2, texSize / 2, texSize / 2)
+    gradient.addColorStop(0, 'rgba(255,255,255,1)')
+    gradient.addColorStop(0.5, 'rgba(255,255,255,0.4)')
+    gradient.addColorStop(1, 'rgba(255,255,255,0)')
+    ctx.fillStyle = gradient
+    ctx.fillRect(0, 0, texSize, texSize)
+    smoke.particleTexture = new Texture(canvas.toDataURL(), this.scene)
+
+    // Emisor: mesh invisible hijo del rootNode en la posición de la chimenea
+    const emitter = MeshBuilder.CreateBox(`${this.id}_smoke_emitter`, { size: 0.01 }, this.scene)
+    emitter.parent = this.rootNode
+    emitter.position = new Vector3(offset.x, offset.y, offset.z)
+    emitter.isVisible = false
+    smoke.emitter = emitter
+
+    // Área de emisión pequeña (boca de chimenea)
+    smoke.minEmitBox = new Vector3(-0.05, 0, -0.05)
+    smoke.maxEmitBox = new Vector3(0.05, 0, 0.05)
+
+    // Dirección: hacia arriba con algo de dispersión
+    smoke.direction1 = new Vector3(-0.1, 1, -0.1)
+    smoke.direction2 = new Vector3(0.1, 1.5, 0.1)
+
+    // Velocidad
+    smoke.minEmitPower = 0.3
+    smoke.maxEmitPower = 0.6
+
+    // Tamaño de partículas
+    smoke.minSize = 0.3
+    smoke.maxSize = 0.7
+
+    // Crecen al subir
+    smoke.minScaleX = 1.0
+    smoke.maxScaleX = 2.0
+    smoke.minScaleY = 1.0
+    smoke.maxScaleY = 2.0
+
+    // Vida
+    smoke.minLifeTime = 2.0
+    smoke.maxLifeTime = 4.0
+
+    // Emisión
+    smoke.emitRate = 18
+
+    // Colores: gris claro → gris → transparente
+    smoke.color1 = new Color4(0.75, 0.75, 0.75, 0.5)
+    smoke.color2 = new Color4(0.6, 0.6, 0.6, 0.35)
+    smoke.colorDead = new Color4(0.5, 0.5, 0.5, 0)
+
+    // Gravedad negativa (sube lentamente)
+    smoke.gravity = new Vector3(0, 0.3, 0)
+
+    // Blend mode aditivo para suavidad
+    smoke.blendMode = ParticleSystem.BLENDMODE_STANDARD
+
+    smoke.start()
+    this.smokeSystem = smoke
+  }
+
   setPosition(worldPos: Vector3): void {
     this.rootNode.position = new Vector3(worldPos.x, 0, worldPos.z)
+  }
+
+  setRotation(angle: number): void {
+    this.rotation = angle % (Math.PI * 2)
+    this.rootNode.rotation.y = this.rotation
+  }
+
+  rotate90(): void {
+    this.setRotation(this.rotation + Math.PI / 2)
   }
 
   setPreviewMode(valid: boolean): void {
@@ -419,6 +507,7 @@ export class Building {
   }
 
   dispose(): void {
+    this.smokeSystem?.dispose()
     for (const m of this.modelMeshes) {
       m.dispose()
     }

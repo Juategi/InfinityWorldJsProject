@@ -10,4 +10,5 @@ export interface BuildingState {
   gridX: number
   gridZ: number
   level: number
+  rotation: number
 }

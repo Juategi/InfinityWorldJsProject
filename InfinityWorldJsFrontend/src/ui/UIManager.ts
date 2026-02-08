@@ -97,11 +97,25 @@ export class UIManager {
 
     // Herramientas de edición
     document.getElementById('btn-move')?.addEventListener('click', () => {
-      this.showToast('Move mode - Coming soon!')
+      const bm = this.game.getBuildingManager()
+      if (bm.isInMoveMode()) {
+        bm.cancelMove()
+      } else if (bm.getSelectedBuildingId()) {
+        bm.startMoveMode()
+      } else {
+        this.showToast('Select a building first')
+      }
     })
 
     document.getElementById('btn-rotate')?.addEventListener('click', () => {
-      this.showToast('Rotate mode - Coming soon!')
+      const bm = this.game.getBuildingManager()
+      if (bm.isInBuildMode()) {
+        bm.rotatePreview()
+      } else if (bm.getSelectedBuildingId()) {
+        bm.rotateSelected()
+      } else {
+        this.showToast('Select a building first')
+      }
     })
 
     document.getElementById('btn-info')?.addEventListener('click', () => {
@@ -109,7 +123,13 @@ export class UIManager {
     })
 
     document.getElementById('btn-delete')?.addEventListener('click', () => {
-      this.showToast('Delete mode - Coming soon!')
+      const bm = this.game.getBuildingManager()
+      const id = bm.getSelectedBuildingId()
+      if (id) {
+        bm.removeBuilding(id)
+      } else {
+        this.showToast('Select a building first')
+      }
     })
 
     // Escuchar eventos del juego
@@ -136,13 +156,40 @@ export class UIManager {
       console.log('Edificio seleccionado:', e.detail)
     }) as EventListener)
 
-    // Tecla Escape para cancelar construcción o salir de modo edición
+    // Atajos de teclado
     document.addEventListener('keydown', (e) => {
+      const bm = this.game.getBuildingManager()
+
       if (e.key === 'Escape') {
-        if (this.game.getMode() === 'edit') {
+        if (bm.isInMoveMode()) {
+          bm.cancelMove()
+        } else if (bm.isInBuildMode()) {
+          bm.cancelBuildMode()
+        } else if (this.game.getMode() === 'edit') {
           this.game.exitEditMode()
-        } else {
-          this.game.getBuildingManager().cancelBuildMode()
+        }
+      }
+
+      if (e.key === 'r' || e.key === 'R') {
+        if (bm.isInBuildMode()) {
+          bm.rotatePreview()
+        } else if (bm.getSelectedBuildingId()) {
+          bm.rotateSelected()
+        }
+      }
+
+      if (e.key === 'm' || e.key === 'M') {
+        if (bm.isInMoveMode()) {
+          bm.cancelMove()
+        } else if (bm.getSelectedBuildingId()) {
+          bm.startMoveMode()
+        }
+      }
+
+      if (e.key === 'Delete' || e.key === 'Backspace') {
+        const id = bm.getSelectedBuildingId()
+        if (id) {
+          bm.removeBuilding(id)
         }
       }
     })
