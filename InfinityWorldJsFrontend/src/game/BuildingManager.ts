@@ -190,6 +190,7 @@ export class BuildingManager {
 
     // Registrar edificio
     this.buildings.set(building.id, building)
+    building.animatePlace()
 
     // Limpiar preview
     this.previewBuilding.dispose()
@@ -205,6 +206,8 @@ export class BuildingManager {
     const building = this.buildings.get(buildingId)
     if (!building) return false
 
+    this.selectedBuildingId = null
+
     // Liberar celdas
     this.grid.freeCells(
       building.gridX,
@@ -213,9 +216,11 @@ export class BuildingManager {
       building.type.sizeZ
     )
 
-    // Eliminar mesh
-    building.dispose()
+    // Animar y luego dispose
     this.buildings.delete(buildingId)
+    building.animateDelete(() => {
+      building.dispose()
+    })
 
     document.dispatchEvent(new CustomEvent('buildingRemoved', { detail: buildingId }))
 
@@ -253,6 +258,7 @@ export class BuildingManager {
 
     this.selectedBuildingId = buildingId
     building.setPreviewMode(true)
+    building.animateSelect()
 
     document.dispatchEvent(new CustomEvent('buildingSelected', {
       detail: { buildingId, type: building.type.id }
@@ -351,6 +357,7 @@ export class BuildingManager {
     )
 
     building.setNormalMode()
+    building.animateBounce()
     this.moving = false
     this.moveOriginalWorldPos = null
     this.deselectBuilding()

@@ -1,6 +1,7 @@
 import { Scene } from '@babylonjs/core/scene'
 import { MeshBuilder } from '@babylonjs/core/Meshes/meshBuilder'
 import { StandardMaterial } from '@babylonjs/core/Materials/standardMaterial'
+import { Texture } from '@babylonjs/core/Materials/Textures/texture'
 import { Color3 } from '@babylonjs/core/Maths/math.color'
 import { Vector3 } from '@babylonjs/core/Maths/math.vector'
 import type { Mesh } from '@babylonjs/core/Meshes/mesh'
@@ -67,10 +68,10 @@ export class Grid {
     this.ground.position.x = (this.width * this.cellSize) / 2
     this.ground.position.z = (this.height * this.cellSize) / 2
 
-    // Material del terreno (césped)
+    // Material del terreno con textura de césped procedural
     const groundMaterial = new StandardMaterial('groundMaterial', this.scene)
-    groundMaterial.diffuseColor = new Color3(0.3, 0.5, 0.2)
-    groundMaterial.specularColor = new Color3(0.1, 0.1, 0.1)
+    groundMaterial.diffuseTexture = this.createGrassTexture()
+    groundMaterial.specularColor = new Color3(0.05, 0.05, 0.05)
     this.ground.material = groundMaterial
 
     // Asegurar que el ground sea pickable
@@ -78,6 +79,69 @@ export class Grid {
 
     // Crear líneas de grid
     this.createGridLines()
+  }
+
+  private createGrassTexture(): Texture {
+    const size = 512
+    const canvas = document.createElement('canvas')
+    canvas.width = size
+    canvas.height = size
+    const ctx = canvas.getContext('2d')!
+
+    // Color base del césped
+    ctx.fillStyle = '#4a8c2a'
+    ctx.fillRect(0, 0, size, size)
+
+    // Añadir variación de color con ruido
+    const imageData = ctx.getImageData(0, 0, size, size)
+    const data = imageData.data
+    for (let i = 0; i < data.length; i += 4) {
+      const noise = (Math.random() - 0.5) * 30
+      data[i] = Math.max(0, Math.min(255, data[i] + noise - 5))       // R
+      data[i + 1] = Math.max(0, Math.min(255, data[i + 1] + noise))   // G
+      data[i + 2] = Math.max(0, Math.min(255, data[i + 2] + noise - 8)) // B
+    }
+    ctx.putImageData(imageData, 0, 0)
+
+    // Dibujar briznas de hierba
+    for (let i = 0; i < 3000; i++) {
+      const x = Math.random() * size
+      const y = Math.random() * size
+      const length = 3 + Math.random() * 8
+      const angle = -Math.PI / 2 + (Math.random() - 0.5) * 0.8
+
+      const brightness = 80 + Math.floor(Math.random() * 60)
+      ctx.strokeStyle = `rgba(${30 + Math.floor(Math.random() * 40)}, ${brightness}, ${10 + Math.floor(Math.random() * 20)}, 0.4)`
+      ctx.lineWidth = 0.5 + Math.random() * 1
+      ctx.beginPath()
+      ctx.moveTo(x, y)
+      ctx.lineTo(x + Math.cos(angle) * length, y + Math.sin(angle) * length)
+      ctx.stroke()
+    }
+
+    // Manchas más claras/oscuras para variedad
+    for (let i = 0; i < 20; i++) {
+      const x = Math.random() * size
+      const y = Math.random() * size
+      const radius = 20 + Math.random() * 40
+      const gradient = ctx.createRadialGradient(x, y, 0, x, y, radius)
+      const bright = Math.random() > 0.5
+      if (bright) {
+        gradient.addColorStop(0, 'rgba(100, 170, 50, 0.15)')
+        gradient.addColorStop(1, 'rgba(100, 170, 50, 0)')
+      } else {
+        gradient.addColorStop(0, 'rgba(30, 60, 15, 0.12)')
+        gradient.addColorStop(1, 'rgba(30, 60, 15, 0)')
+      }
+      ctx.fillStyle = gradient
+      ctx.fillRect(x - radius, y - radius, radius * 2, radius * 2)
+    }
+
+    const texture = new Texture(canvas.toDataURL(), this.scene)
+    const tileCount = Math.max(this.width, this.height) / 10
+    texture.uScale = tileCount
+    texture.vScale = tileCount
+    return texture
   }
 
   private createGridLines(): void {

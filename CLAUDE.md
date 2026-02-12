@@ -10,6 +10,27 @@ Juego móvil 3D de construcción estilo Clash of Clans.
 - **Mundo infinito**: El mundo se expande desde un punto central (origen del mapa)
 - **Expansión orgánica**: Los jugadores van reclamando parcelas cada vez más lejanas del centro, expandiendo el mundo de forma natural
 
+## Economía y Progresión
+
+- **Monedas**: Los jugadores usan monedas para comprar parcelas y desbloquear objetos/edificios premium
+- **Parcelas**: Los jugadores empiezan con 0 parcelas. Deben comprar parcelas con monedas para empezar a construir
+- **Catálogo de objetos y edificios**: Gran variedad que abarca múltiples épocas históricas:
+  - **Medieval**: Castillos, torres de vigilancia, herrerías, casas de madera, murallas de piedra, etc.
+  - **Colonial/Clásico**: Mansiones, iglesias, molinos de viento, granjas, puentes de piedra, etc.
+  - **Industrial**: Fábricas, estaciones de tren, almacenes, chimeneas, puentes de hierro, etc.
+  - **Moderno**: Rascacielos, centros comerciales, parques, hospitales, estadios, etc.
+  - **Futurista**: Torres de energía, cúpulas, estaciones espaciales, laboratorios, vehículos voladores, etc.
+- **Objetos gratuitos vs premium**: Algunos objetos son accesibles para todos gratuitamente, otros se desbloquean pagando monedas
+- **Sistema de obtención de monedas**: Por definir (posibles fuentes: logros, tiempo jugado, compras in-app, misiones, etc.)
+
+## Interfaz de Usuario
+
+- **Menú principal** (pantalla de inicio al abrir la app):
+  - **Acceder al mundo**: Botón para entrar al mundo compartido
+  - **Mis parcelas**: Lista de parcelas del jugador con sus coordenadas (clickeables para ir directamente)
+  - **Tienda**: Acceso a la tienda de objetos, edificios y parcelas
+  - **Ajustes**: Configuración del juego (sonido, gráficos, cuenta, etc.)
+
 ## Estructura de Carpetas
 
 ```

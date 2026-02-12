@@ -7,6 +7,10 @@ import { TransformNode } from '@babylonjs/core/Meshes/transformNode'
 import { SceneLoader } from '@babylonjs/core/Loading/sceneLoader'
 import { ParticleSystem } from '@babylonjs/core/Particles/particleSystem'
 import { Texture } from '@babylonjs/core/Materials/Textures/texture'
+import { Animation } from '@babylonjs/core/Animations/animation'
+import { BackEase, CubicEase } from '@babylonjs/core/Animations/easing'
+import { EasingFunction } from '@babylonjs/core/Animations/easing'
+import '@babylonjs/core/Animations/animatable'
 import type { Mesh } from '@babylonjs/core/Meshes/mesh'
 import type { AbstractMesh } from '@babylonjs/core/Meshes/abstractMesh'
 import '@babylonjs/loaders/glTF'
@@ -410,13 +414,79 @@ export class Building {
     this.rootNode.position = new Vector3(worldPos.x, 0, worldPos.z)
   }
 
-  setRotation(angle: number): void {
-    this.rotation = angle % (Math.PI * 2)
-    this.rootNode.rotation.y = this.rotation
+  setRotation(angle: number, animate: boolean = false): void {
+    const newRotation = angle % (Math.PI * 2)
+    if (animate) {
+      const from = this.rotation
+      this.rotation = newRotation
+      const anim = new Animation('rotAnim', 'rotation.y', 60, Animation.ANIMATIONTYPE_FLOAT, Animation.ANIMATIONLOOPMODE_CONSTANT)
+      anim.setKeys([
+        { frame: 0, value: from },
+        { frame: 15, value: newRotation }
+      ])
+      const ease = new CubicEase()
+      ease.setEasingMode(EasingFunction.EASINGMODE_EASEOUT)
+      anim.setEasingFunction(ease)
+      this.scene.beginDirectAnimation(this.rootNode, [anim], 0, 15, false)
+    } else {
+      this.rotation = newRotation
+      this.rootNode.rotation.y = newRotation
+    }
   }
 
   rotate90(): void {
-    this.setRotation(this.rotation + Math.PI / 2)
+    this.setRotation(this.rotation + Math.PI / 2, true)
+  }
+
+  // === Animaciones ===
+
+  animatePlace(): void {
+    this.rootNode.scaling = new Vector3(0, 0, 0)
+    const anim = new Animation('placeAnim', 'scaling', 60, Animation.ANIMATIONTYPE_VECTOR3, Animation.ANIMATIONLOOPMODE_CONSTANT)
+    anim.setKeys([
+      { frame: 0, value: new Vector3(0, 0, 0) },
+      { frame: 24, value: new Vector3(1, 1, 1) }
+    ])
+    const ease = new BackEase(0.5)
+    ease.setEasingMode(EasingFunction.EASINGMODE_EASEOUT)
+    anim.setEasingFunction(ease)
+    this.scene.beginDirectAnimation(this.rootNode, [anim], 0, 24, false)
+  }
+
+  animateDelete(onComplete: () => void): void {
+    const anim = new Animation('deleteAnim', 'scaling', 60, Animation.ANIMATIONTYPE_VECTOR3, Animation.ANIMATIONLOOPMODE_CONSTANT)
+    anim.setKeys([
+      { frame: 0, value: new Vector3(1, 1, 1) },
+      { frame: 21, value: new Vector3(0, 0, 0) }
+    ])
+    const ease = new CubicEase()
+    ease.setEasingMode(EasingFunction.EASINGMODE_EASEIN)
+    anim.setEasingFunction(ease)
+    this.scene.beginDirectAnimation(this.rootNode, [anim], 0, 21, false, 1, onComplete)
+  }
+
+  animateSelect(): void {
+    const anim = new Animation('selectAnim', 'scaling', 60, Animation.ANIMATIONTYPE_VECTOR3, Animation.ANIMATIONLOOPMODE_CONSTANT)
+    anim.setKeys([
+      { frame: 0, value: new Vector3(1, 1, 1) },
+      { frame: 8, value: new Vector3(1.08, 1.08, 1.08) },
+      { frame: 15, value: new Vector3(1, 1, 1) }
+    ])
+    this.scene.beginDirectAnimation(this.rootNode, [anim], 0, 15, false)
+  }
+
+  animateBounce(): void {
+    const baseY = this.rootNode.position.y
+    const anim = new Animation('bounceAnim', 'position.y', 60, Animation.ANIMATIONTYPE_FLOAT, Animation.ANIMATIONLOOPMODE_CONSTANT)
+    anim.setKeys([
+      { frame: 0, value: baseY },
+      { frame: 9, value: baseY + 1.5 },
+      { frame: 18, value: baseY }
+    ])
+    const ease = new CubicEase()
+    ease.setEasingMode(EasingFunction.EASINGMODE_EASEINOUT)
+    anim.setEasingFunction(ease)
+    this.scene.beginDirectAnimation(this.rootNode, [anim], 0, 18, false)
   }
 
   setPreviewMode(valid: boolean): void {
