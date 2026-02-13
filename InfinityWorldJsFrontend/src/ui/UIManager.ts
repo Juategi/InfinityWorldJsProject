@@ -7,8 +7,8 @@ export class UIManager {
   private game: Game
 
   // Elementos del DOM
-  private goldDisplay!: HTMLElement
-  private gemsDisplay!: HTMLElement
+  private coinsDisplay!: HTMLElement
+  private menuCoinsDisplay!: HTMLElement | null
   private buildItems!: HTMLElement
   private buildTabs!: NodeListOf<HTMLElement>
   private buildModeBtn!: HTMLElement
@@ -37,8 +37,8 @@ export class UIManager {
   }
 
   private cacheElements(): void {
-    this.goldDisplay = document.querySelector('#resource-gold .resource-value')!
-    this.gemsDisplay = document.querySelector('#resource-gems .resource-value')!
+    this.coinsDisplay = document.querySelector('#resource-coins .resource-value')!
+    this.menuCoinsDisplay = document.querySelector('#menu-coins .menu-coins-value')
     this.buildItems = document.getElementById('build-items')!
     this.buildTabs = document.querySelectorAll('.build-tab')!
     this.buildModeBtn = document.getElementById('btn-build-mode')!
@@ -148,7 +148,7 @@ export class UIManager {
 
     document.addEventListener('buildingPlaced', ((e: CustomEvent) => {
       const building = e.detail
-      this.game.spendGold(building.type.cost)
+      this.game.spendCoins(building.type.cost)
       this.updateBuildingAvailability()
     }) as EventListener)
 
@@ -239,8 +239,19 @@ export class UIManager {
   }
 
   private updateResourceDisplay(): void {
-    this.goldDisplay.textContent = this.formatNumber(this.game.state.gold)
-    this.gemsDisplay.textContent = this.formatNumber(this.game.state.gems)
+    const formatted = this.formatNumber(this.game.state.coins)
+    this.coinsDisplay.textContent = formatted
+    if (this.menuCoinsDisplay) {
+      this.menuCoinsDisplay.textContent = formatted
+    }
+
+    // Animación de pulso al cambiar
+    const coinEl = document.getElementById('resource-coins')
+    if (coinEl) {
+      coinEl.classList.remove('coins-changed')
+      void coinEl.offsetWidth // force reflow
+      coinEl.classList.add('coins-changed')
+    }
   }
 
   private formatNumber(num: number): string {
@@ -258,7 +269,7 @@ export class UIManager {
     const buildings = allBuildings.filter(b => b.category === this.currentCategory)
 
     this.buildItems.innerHTML = buildings.map(building => `
-      <button class="build-item ${this.game.state.gold < building.cost ? 'disabled' : ''}" data-building-type="${building.id}">
+      <button class="build-item ${this.game.state.coins < building.cost ? 'disabled' : ''}" data-building-type="${building.id}">
         ${building.isNew ? '<span class="build-item-badge">NEW</span>' : ''}
         <div class="build-item-icon">${building.icon}</div>
         <span class="build-item-name">${building.name}</span>
@@ -286,9 +297,8 @@ export class UIManager {
 
     if (!building) return
 
-    // Verificar si tiene suficiente oro
-    if (this.game.state.gold < building.cost) {
-      this.showToast('Not enough gold!')
+    if (this.game.state.coins < building.cost) {
+      this.showToast('Monedas insuficientes!')
       return
     }
 
@@ -303,7 +313,7 @@ export class UIManager {
       const typeId = btn.getAttribute('data-building-type')
       const building = buildings.find(b => b.id === typeId)
 
-      if (building && this.game.state.gold < building.cost) {
+      if (building && this.game.state.coins < building.cost) {
         btn.classList.add('disabled')
       } else {
         btn.classList.remove('disabled')

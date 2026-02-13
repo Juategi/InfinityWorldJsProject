@@ -15,6 +15,7 @@ interface LoadedParcel {
   ground: Mesh
   border: LinesMesh
   editIcon: Mesh | null
+  buyIcon: Mesh | null
 }
 
 export class ParcelManager {
@@ -23,6 +24,7 @@ export class ParcelManager {
   private currentParcelX: number = 0
   private currentParcelY: number = 0
   private onEditParcelCallback: ((parcel: Parcel) => void) | null = null
+  private onBuyParcelCallback: ((parcel: Parcel) => void) | null = null
 
   constructor(scene: Scene) {
     this.scene = scene
@@ -30,6 +32,10 @@ export class ParcelManager {
 
   onEditParcel(callback: (parcel: Parcel) => void): void {
     this.onEditParcelCallback = callback
+  }
+
+  onBuyParcel(callback: (parcel: Parcel) => void): void {
+    this.onBuyParcelCallback = callback
   }
 
   private getParcelKey(x: number, y: number): string {
@@ -117,13 +123,16 @@ export class ParcelManager {
     // Crear borde (rojo si tiene dueño, gris si no)
     const border = this.createParcelBorder(parcelX, parcelY, key, hasOwner)
 
-    // Crear icono de edición solo si tiene dueño
+    // Crear icono de edición solo si tiene dueño, icono de compra si no
     let editIcon: Mesh | null = null
+    let buyIcon: Mesh | null = null
     if (hasOwner) {
       editIcon = this.createEditIcon(parcelX, parcelY, key, parcel)
+    } else {
+      buyIcon = this.createBuyIcon(parcelX, parcelY, key, parcel)
     }
 
-    this.loadedParcels.set(key, { parcel, ground, border, editIcon })
+    this.loadedParcels.set(key, { parcel, ground, border, editIcon, buyIcon })
   }
 
   private createEditIcon(parcelX: number, parcelY: number, key: string, parcel: Parcel): Mesh {
@@ -155,6 +164,44 @@ export class ParcelManager {
         () => {
           if (this.onEditParcelCallback) {
             this.onEditParcelCallback(parcel)
+          }
+        }
+      )
+    )
+
+    return icon
+  }
+
+  private createBuyIcon(parcelX: number, parcelY: number, key: string, parcel: Parcel): Mesh {
+    const worldCoords = this.parcelToWorldCoords(parcelX, parcelY)
+    const size = WORLD_CONFIG.PARCEL_SIZE
+
+    // Crear diamante (esfera aplastada) como icono de compra
+    const icon = MeshBuilder.CreateSphere(
+      `parcel_buy_icon_${key}`,
+      { diameter: 4, segments: 8 },
+      this.scene
+    )
+    icon.position.x = worldCoords.x + size / 2
+    icon.position.y = 8
+    icon.position.z = worldCoords.z + size / 2
+    icon.scaling.y = 0.6
+
+    // Material verde/dorado para el icono de compra
+    const iconMaterial = new StandardMaterial(`buy_icon_material_${key}`, this.scene)
+    iconMaterial.diffuseColor = new Color3(0.2, 0.8, 0.3)
+    iconMaterial.emissiveColor = new Color3(0.05, 0.2, 0.05)
+    icon.material = iconMaterial
+
+    // Hacer clickeable
+    icon.isPickable = true
+    icon.actionManager = new ActionManager(this.scene)
+    icon.actionManager.registerAction(
+      new ExecuteCodeAction(
+        ActionManager.OnPickTrigger,
+        () => {
+          if (this.onBuyParcelCallback) {
+            this.onBuyParcelCallback(parcel)
           }
         }
       )
@@ -207,9 +254,8 @@ export class ParcelManager {
     if (loaded) {
       loaded.ground.dispose()
       loaded.border.dispose()
-      if (loaded.editIcon) {
-        loaded.editIcon.dispose()
-      }
+      if (loaded.editIcon) loaded.editIcon.dispose()
+      if (loaded.buyIcon) loaded.buyIcon.dispose()
       this.loadedParcels.delete(key)
     }
   }
@@ -218,14 +264,36 @@ export class ParcelManager {
     for (const loaded of this.loadedParcels.values()) {
       loaded.ground.setEnabled(visible)
       loaded.border.setEnabled(visible)
-      if (loaded.editIcon) {
-        loaded.editIcon.setEnabled(visible)
-      }
+      if (loaded.editIcon) loaded.editIcon.setEnabled(visible)
+      if (loaded.buyIcon) loaded.buyIcon.setEnabled(visible)
     }
   }
 
   getLoadedParcelsCount(): number {
     return this.loadedParcels.size
+  }
+
+  markParcelAsOwned(x: number, y: number, ownerId: string): void {
+    const key = this.getParcelKey(x, y)
+    const loaded = this.loadedParcels.get(key)
+    if (!loaded) return
+
+    // Update parcel data
+    loaded.parcel.ownerId = ownerId
+
+    // Change ground color to owned
+    const material = loaded.ground.material as StandardMaterial
+    material.diffuseColor = new Color3(0.35, 0.55, 0.25)
+
+    // Change border color to owned
+    loaded.border.color = new Color3(1, 0.3, 0.3)
+
+    // Remove buy icon, add edit icon
+    if (loaded.buyIcon) {
+      loaded.buyIcon.dispose()
+      loaded.buyIcon = null
+    }
+    loaded.editIcon = this.createEditIcon(x, y, key, loaded.parcel)
   }
 
   getCurrentParcelCoords(): { x: number; y: number } {

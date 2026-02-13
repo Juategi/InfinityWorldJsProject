@@ -27,8 +27,7 @@ export class Game {
   private savedCameraPosition: Vector3 | null = null
 
   public state: GameState = {
-    gold: 1000,
-    gems: 50,
+    coins: 500,
     buildings: []
   }
 
@@ -60,6 +59,11 @@ export class Game {
     // Callback cuando se hace clic en icono de edición
     this.parcelManager.onEditParcel((parcel) => {
       this.enterEditMode(parcel)
+    })
+
+    // Callback cuando se hace clic en icono de compra
+    this.parcelManager.onBuyParcel((parcel) => {
+      document.dispatchEvent(new CustomEvent('buyParcelRequest', { detail: parcel }))
     })
 
     // Inicializar Grid para modo edición (oculto inicialmente)
@@ -277,14 +281,14 @@ export class Game {
     return this.inputManager
   }
 
-  addGold(amount: number): void {
-    this.state.gold += amount
+  addCoins(amount: number): void {
+    this.state.coins += amount
     document.dispatchEvent(new CustomEvent('resourceUpdate', { detail: this.state }))
   }
 
-  spendGold(amount: number): boolean {
-    if (this.state.gold >= amount) {
-      this.state.gold -= amount
+  spendCoins(amount: number): boolean {
+    if (this.state.coins >= amount) {
+      this.state.coins -= amount
       document.dispatchEvent(new CustomEvent('resourceUpdate', { detail: this.state }))
       return true
     }

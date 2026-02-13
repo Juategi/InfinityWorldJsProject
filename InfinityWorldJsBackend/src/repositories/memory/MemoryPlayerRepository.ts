@@ -40,6 +40,16 @@ export class MemoryPlayerRepository implements IPlayerRepository {
     return updated;
   }
 
+  async addCoins(id: string, amount: number): Promise<Player | null> {
+    const player = this.players.get(id);
+    if (!player) return null;
+    const newCoins = player.coins + amount;
+    if (newCoins < 0) return null;
+    const updated = { ...player, coins: newCoins };
+    this.players.set(id, updated);
+    return updated;
+  }
+
   async delete(id: string): Promise<boolean> {
     return this.players.delete(id);
   }

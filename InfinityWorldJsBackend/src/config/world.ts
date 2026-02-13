@@ -1,3 +1,4 @@
 export const WORLD_CONFIG = {
   PARCEL_SIZE: 100,
+  PARCEL_PRICE: 100,
 };

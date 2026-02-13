@@ -539,18 +539,46 @@ html, body {
   background-repeat: no-repeat;
 }
 
-.gold-icon {
+.coin-icon {
   background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%);
   box-shadow: 0 0 6px rgba(255, 215, 0, 0.5);
-}
-
-.gem-icon {
-  background: linear-gradient(135deg, #FF69B4 0%, #FF1493 100%);
-  box-shadow: 0 0 6px rgba(255, 105, 180, 0.5);
+  border: 1px solid rgba(255, 180, 0, 0.6);
 }
 
 .resource-value {
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+/* Coins in main menu */
+.menu-coins {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-bottom: 24px;
+  padding: 8px 20px;
+  background: linear-gradient(180deg, rgba(60, 60, 80, 0.9) 0%, rgba(40, 40, 60, 0.9) 100%);
+  border-radius: 24px;
+  border: 2px solid rgba(255, 215, 0, 0.3);
+  color: #FFD700;
+  font-weight: 700;
+  font-size: 18px;
+  align-self: center;
+}
+
+.menu-coins-value {
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+}
+
+/* Coin spend animation */
+@keyframes coinPulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.2); }
+  100% { transform: scale(1); }
+}
+
+.coins-changed {
+  animation: coinPulse 0.3s ease-out;
 }
 
 /* Quest Bar */
@@ -927,6 +955,113 @@ html, body {
     0 4px 20px rgba(255, 87, 34, 0.5),
     0 8px 30px rgba(0, 0, 0, 0.3),
     inset 0 2px 0 rgba(255, 255, 255, 0.3);
+}
+
+/* ===== DIALOG OVERLAY ===== */
+.dialog-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.6);
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: dialogFadeIn 0.2s ease;
+}
+
+@keyframes dialogFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.dialog-box {
+  background: linear-gradient(180deg, #2a2a3e 0%, #1e1e30 100%);
+  border: 2px solid rgba(255, 255, 255, 0.15);
+  border-radius: 20px;
+  padding: 28px 32px;
+  min-width: 280px;
+  max-width: 340px;
+  text-align: center;
+  box-shadow: 0 8px 40px rgba(0, 0, 0, 0.5);
+  animation: dialogSlideIn 0.25s ease;
+}
+
+@keyframes dialogSlideIn {
+  from { transform: scale(0.9) translateY(10px); opacity: 0; }
+  to { transform: scale(1) translateY(0); opacity: 1; }
+}
+
+.dialog-title {
+  font-size: 20px;
+  font-weight: 700;
+  color: white;
+  margin-bottom: 8px;
+}
+
+.dialog-text {
+  font-size: 15px;
+  color: rgba(255, 255, 255, 0.6);
+  margin-bottom: 16px;
+}
+
+.dialog-price {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-size: 24px;
+  font-weight: 800;
+  color: #FFD700;
+  margin-bottom: 24px;
+}
+
+.dialog-buttons {
+  display: flex;
+  gap: 10px;
+}
+
+.dialog-btn {
+  flex: 1;
+  padding: 14px 20px;
+  border-radius: 12px;
+  border: 2px solid rgba(255, 255, 255, 0.1);
+  font-size: 15px;
+  font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.dialog-btn:active {
+  transform: scale(0.96);
+}
+
+.dialog-btn-cancel {
+  background: linear-gradient(180deg, rgba(60, 60, 80, 0.95) 0%, rgba(40, 40, 60, 0.95) 100%);
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.dialog-btn-cancel:hover {
+  background: linear-gradient(180deg, rgba(75, 75, 95, 0.95) 0%, rgba(55, 55, 75, 0.95) 100%);
+}
+
+.dialog-btn-confirm {
+  background: linear-gradient(180deg, #4FC3F7 0%, #03A9F4 50%, #0288D1 100%);
+  color: white;
+  border-color: rgba(79, 195, 247, 0.4);
+  box-shadow: 0 4px 16px rgba(3, 169, 244, 0.3);
+}
+
+.dialog-btn-confirm:hover {
+  box-shadow: 0 4px 20px rgba(3, 169, 244, 0.4);
+}
+
+.dialog-btn-confirm:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 /* ===== TOAST ===== */

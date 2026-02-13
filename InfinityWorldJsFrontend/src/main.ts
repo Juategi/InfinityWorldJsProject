@@ -1,5 +1,6 @@
 import { Game } from './game/Game'
 import { UIManager } from './ui/UIManager'
+import { WORLD_CONFIG } from './config/world'
 import type { Parcel } from './types'
 
 let game: Game | null = null
@@ -162,6 +163,61 @@ async function showSettingsScreen() {
   showScreen(settingsScreen)
 }
 
+// --- Diálogo de compra de parcela ---
+
+let pendingBuyParcel: Parcel | null = null
+
+function showBuyParcelDialog(parcel: Parcel) {
+  pendingBuyParcel = parcel
+  const dialog = document.getElementById('buy-parcel-dialog')!
+  document.getElementById('buy-parcel-x')!.textContent = String(parcel.x)
+  document.getElementById('buy-parcel-y')!.textContent = String(parcel.y)
+  document.getElementById('buy-parcel-price')!.textContent = String(WORLD_CONFIG.PARCEL_PRICE)
+
+  // Disable confirm if not enough coins
+  const confirmBtn = document.getElementById('btn-buy-parcel-confirm') as HTMLButtonElement
+  confirmBtn.disabled = game ? game.state.coins < WORLD_CONFIG.PARCEL_PRICE : true
+
+  dialog.style.display = 'flex'
+}
+
+function hideBuyParcelDialog() {
+  pendingBuyParcel = null
+  document.getElementById('buy-parcel-dialog')!.style.display = 'none'
+}
+
+function confirmBuyParcel() {
+  if (!pendingBuyParcel || !game) return
+
+  const price = WORLD_CONFIG.PARCEL_PRICE
+  if (game.state.coins < price) {
+    showToast('Monedas insuficientes!')
+    hideBuyParcelDialog()
+    return
+  }
+
+  // Deduct coins locally
+  game.spendCoins(price)
+
+  // Update parcel visually
+  game.getParcelManager().markParcelAsOwned(
+    pendingBuyParcel.x,
+    pendingBuyParcel.y,
+    'player1'
+  )
+
+  // Add to player parcels list
+  playerParcels.push({
+    id: `${pendingBuyParcel.x},${pendingBuyParcel.y}`,
+    ownerId: 'player1',
+    x: pendingBuyParcel.x,
+    y: pendingBuyParcel.y,
+  })
+
+  showToast(`Parcela (${pendingBuyParcel.x}, ${pendingBuyParcel.y}) comprada!`)
+  hideBuyParcelDialog()
+}
+
 // --- Inicialización ---
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -206,4 +262,18 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('btn-logout')!.addEventListener('pointerdown', () => {
     showToast('Cerrar sesion - Proximamente')
   })
+
+  // Diálogo de compra de parcela
+  document.getElementById('btn-buy-parcel-cancel')!.addEventListener('pointerdown', () => {
+    hideBuyParcelDialog()
+  })
+
+  document.getElementById('btn-buy-parcel-confirm')!.addEventListener('pointerdown', () => {
+    confirmBuyParcel()
+  })
+
+  // Escuchar petición de compra desde el juego
+  document.addEventListener('buyParcelRequest', ((e: CustomEvent<Parcel>) => {
+    showBuyParcelDialog(e.detail)
+  }) as EventListener)
 })

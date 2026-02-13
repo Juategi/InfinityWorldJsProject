@@ -1,6 +1,5 @@
 export interface GameState {
-  gold: number
-  gems: number
+  coins: number
   buildings: BuildingState[]
 }
 

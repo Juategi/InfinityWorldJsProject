@@ -58,6 +58,14 @@ export class PgPlayerRepository implements IPlayerRepository {
     return result.rows[0] || null;
   }
 
+  async addCoins(id: string, amount: number): Promise<Player | null> {
+    const result = await query(
+      `UPDATE players SET coins = coins + $1 WHERE id = $2 AND coins + $1 >= 0 RETURNING ${SELECT_COLS}`,
+      [amount, id]
+    );
+    return result.rows[0] || null;
+  }
+
   async delete(id: string): Promise<boolean> {
     const result = await query("DELETE FROM players WHERE id = $1", [id]);
     return (result.rowCount ?? 0) > 0;

@@ -7,9 +7,9 @@ import { checkConnection, closePool } from "./db";
 import { connectRedis, checkRedisConnection, closeRedis } from "./redis";
 import { createRepositories, Repositories } from "./repositories/factory";
 import { runAllSeeds } from "./seed";
-import { WORLD_CONFIG } from "./config/world";
 import { logger } from "./logger";
 import { requestLogger, errorHandler } from "./middleware";
+import { playerRoutes, parcelRoutes, catalogRoutes } from "./routes";
 
 config();
 
@@ -35,18 +35,6 @@ app.get("/health", async (_req, res) => {
     redis: redisOk ? "connected" : "disconnected",
   });
 });
-
-// API: Obtener parcelas en un área
-app.get("/parcels", async (req, res) => {
-  const x = Number(req.query.x) || 0;
-  const y = Number(req.query.y) || 0;
-  const radius = Number(req.query.radius) || 2;
-
-  const parcels = await repos.parcel.findInArea(x, y, radius);
-  res.json({ parcels, parcelSize: WORLD_CONFIG.PARCEL_SIZE });
-});
-
-app.use(errorHandler);
 
 const server = createServer(app);
 
@@ -75,6 +63,12 @@ async function start() {
   } catch {
     logger.warn("Redis not available");
   }
+
+  // Registrar rutas de API (necesitan repos)
+  app.use("/parcels", parcelRoutes(repos));
+  app.use("/players", playerRoutes(repos));
+  app.use("/catalog", catalogRoutes(repos));
+  app.use(errorHandler);
 
   // Seeds iniciales (mundo + catálogo)
   await runAllSeeds(repos);

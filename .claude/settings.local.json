@@ -19,7 +19,9 @@
       "Bash(docker exec:*)",
       "Bash(npm run migrate:down:*)",
       "Bash(claude --version:*)",
-      "Bash(npm run seed:*)"
+      "Bash(npm run seed:*)",
+      "Bash(npx kill-port:*)",
+      "Bash(taskkill:*)"
     ]
   }
 }

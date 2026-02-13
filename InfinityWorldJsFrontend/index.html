@@ -17,6 +17,10 @@
           <h1 class="menu-title">Infinity<span>World</span></h1>
           <p class="menu-subtitle">Build your world</p>
         </div>
+        <div class="menu-coins" id="menu-coins">
+          <div class="resource-icon coin-icon"></div>
+          <span class="menu-coins-value">500</span>
+        </div>
         <div class="menu-buttons">
           <button class="menu-btn menu-btn-primary" id="btn-enter-world">
             <svg viewBox="0 0 24 24" fill="currentColor">
@@ -145,6 +149,84 @@
       </div>
     </div>
 
+    <!-- Pantalla Tienda -->
+    <div id="shop-screen" class="screen" style="display: none;">
+      <div class="menu-bg"></div>
+      <div class="screen-container">
+        <div class="screen-header">
+          <button class="screen-back-btn" id="btn-shop-back">
+            <svg viewBox="0 0 24 24" fill="currentColor">
+              <path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/>
+            </svg>
+          </button>
+          <h2 class="screen-title">Tienda</h2>
+          <div class="shop-coins">
+            <div class="resource-icon coin-icon"></div>
+            <span class="shop-coins-value">500</span>
+          </div>
+        </div>
+
+        <!-- Tabs de sección: Objetos / Parcelas -->
+        <div class="shop-section-tabs">
+          <button class="shop-section-tab active" data-shop-section="objects">Objetos</button>
+          <button class="shop-section-tab" data-shop-section="parcels">Parcelas</button>
+        </div>
+
+        <!-- Sección: Objetos -->
+        <div id="shop-objects-section" class="shop-section">
+          <!-- Filtros por época -->
+          <div class="shop-era-tabs">
+            <button class="shop-era-tab active" data-era="all">Todas</button>
+            <button class="shop-era-tab" data-era="medieval">Medieval</button>
+            <button class="shop-era-tab" data-era="colonial">Colonial</button>
+            <button class="shop-era-tab" data-era="industrial">Industrial</button>
+            <button class="shop-era-tab" data-era="moderno">Moderna</button>
+            <button class="shop-era-tab" data-era="futurista">Futurista</button>
+          </div>
+
+          <!-- Sub-filtros por categoría -->
+          <div class="shop-category-filters">
+            <button class="shop-cat-filter active" data-cat="all">Todo</button>
+            <button class="shop-cat-filter" data-cat="buildings">Edificios</button>
+            <button class="shop-cat-filter" data-cat="decor">Decoracion</button>
+            <button class="shop-cat-filter" data-cat="nature">Naturaleza</button>
+          </div>
+
+          <!-- Grid de objetos -->
+          <div id="shop-items-grid" class="shop-items-grid">
+            <!-- Se llena dinámicamente -->
+          </div>
+        </div>
+
+        <!-- Sección: Parcelas -->
+        <div id="shop-parcels-section" class="shop-section" style="display: none;">
+          <div class="shop-parcels-info">
+            <p class="shop-parcels-desc">Compra parcelas para expandir tu territorio. El precio varia segun la distancia al centro del mundo.</p>
+          </div>
+          <div id="shop-parcels-grid" class="shop-parcels-grid">
+            <!-- Se llena dinámicamente -->
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Diálogo de compra de objeto -->
+    <div id="buy-object-dialog" class="dialog-overlay" style="display: none;">
+      <div class="dialog-box">
+        <div class="buy-object-icon" id="buy-object-icon"></div>
+        <h3 class="dialog-title" id="buy-object-name"></h3>
+        <p class="dialog-text" id="buy-object-desc"></p>
+        <div class="dialog-price" id="buy-object-price-row">
+          <div class="resource-icon coin-icon"></div>
+          <span id="buy-object-price">0</span>
+        </div>
+        <div class="dialog-buttons">
+          <button class="dialog-btn dialog-btn-cancel" id="btn-buy-object-cancel">Cancelar</button>
+          <button class="dialog-btn dialog-btn-confirm" id="btn-buy-object-confirm">Comprar</button>
+        </div>
+      </div>
+    </div>
+
     <!-- Canvas 3D de Babylon.js -->
     <canvas id="game-canvas" style="display: none;"></canvas>
 
@@ -154,13 +236,9 @@
       <!-- HUD Superior Izquierda: Recursos -->
       <div id="hud-top-left">
         <div class="resource-bar">
-          <div class="resource" id="resource-gold">
-            <div class="resource-icon gold-icon"></div>
-            <span class="resource-value">15,450</span>
-          </div>
-          <div class="resource" id="resource-gems">
-            <div class="resource-icon gem-icon"></div>
-            <span class="resource-value">250</span>
+          <div class="resource" id="resource-coins">
+            <div class="resource-icon coin-icon"></div>
+            <span class="resource-value">500</span>
           </div>
         </div>
 
@@ -264,6 +342,24 @@
         </svg>
       </button>
 
+    </div>
+
+    <!-- Diálogo de compra de parcela -->
+    <div id="buy-parcel-dialog" class="dialog-overlay" style="display: none;">
+      <div class="dialog-box">
+        <h3 class="dialog-title">Comprar Parcela</h3>
+        <p class="dialog-text">
+          Parcela (<span id="buy-parcel-x">0</span>, <span id="buy-parcel-y">0</span>)
+        </p>
+        <div class="dialog-price">
+          <div class="resource-icon coin-icon"></div>
+          <span id="buy-parcel-price">100</span>
+        </div>
+        <div class="dialog-buttons">
+          <button class="dialog-btn dialog-btn-cancel" id="btn-buy-parcel-cancel">Cancelar</button>
+          <button class="dialog-btn dialog-btn-confirm" id="btn-buy-parcel-confirm">Comprar</button>
+        </div>
+      </div>
     </div>
 
     <!-- Toast para notificaciones -->
