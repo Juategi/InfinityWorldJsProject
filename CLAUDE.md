@@ -114,3 +114,9 @@ npm run dev      # Servidor de desarrollo (hot reload)
 npm run build    # Compilar TypeScript
 npm run start    # Ejecutar build de producción
 ```
+
+## Protocolo de Trabajo (Backlog)
+
+- El backlog de tareas está en `BACKLOG.md` en la raíz del proyecto
+- Cuando el usuario pida la "siguiente tarea" o "próxima tarea", buscar en `BACKLOG.md` la primera tarea cuyo título NO tenga un check (✅)
+- Al completar una tarea, añadir ✅ al lado del título en `BACKLOG.md` (ej: `### 1.1 Crear pantalla de menú principal ✅`)

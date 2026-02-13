@@ -256,6 +256,10 @@ export class Game {
     })
   }
 
+  stop(): void {
+    this.engine.stopRenderLoop()
+  }
+
   // Métodos públicos para interactuar con el juego
   getScene(): Scene {
     return this.scene

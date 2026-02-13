@@ -9,11 +9,147 @@
     <link rel="stylesheet" href="/src/styles/main.css" />
   </head>
   <body>
+    <!-- Menú Principal -->
+    <div id="main-menu">
+      <div class="menu-bg"></div>
+      <div class="menu-content">
+        <div class="menu-header">
+          <h1 class="menu-title">Infinity<span>World</span></h1>
+          <p class="menu-subtitle">Build your world</p>
+        </div>
+        <div class="menu-buttons">
+          <button class="menu-btn menu-btn-primary" id="btn-enter-world">
+            <svg viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+            </svg>
+            Acceder al Mundo
+          </button>
+          <button class="menu-btn menu-btn-secondary" id="btn-my-parcels">
+            <svg viewBox="0 0 24 24" fill="currentColor">
+              <path d="M1 11v10h5v-6h4v6h5V11L8 4z M10 3v1.97l7 5V11h2v2h-2v2h2v2h-2v4h6V3H10zm9 6h-2V7h2v2z"/>
+            </svg>
+            Mis Parcelas
+          </button>
+          <button class="menu-btn menu-btn-secondary" id="btn-menu-shop">
+            <svg viewBox="0 0 24 24" fill="currentColor">
+              <path d="M7 18c-1.1 0-1.99.9-1.99 2S5.9 22 7 22s2-.9 2-2-.9-2-2-2zM1 2v2h2l3.6 7.59-1.35 2.45c-.16.28-.25.61-.25.96 0 1.1.9 2 2 2h12v-2H7.42c-.14 0-.25-.11-.25-.25l.03-.12.9-1.63h7.45c.75 0 1.41-.41 1.75-1.03l3.58-6.49c.08-.14.12-.31.12-.48 0-.55-.45-1-1-1H5.21l-.94-2H1zm16 16c-1.1 0-1.99.9-1.99 2s.89 2 1.99 2 2-.9 2-2-.9-2-2-2z"/>
+            </svg>
+            Tienda
+          </button>
+          <button class="menu-btn menu-btn-secondary" id="btn-menu-settings">
+            <svg viewBox="0 0 24 24" fill="currentColor">
+              <path d="M19.14 12.94c.04-.31.06-.63.06-.94 0-.31-.02-.63-.06-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.04.31-.06.63-.06.94s.02.63.06.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/>
+            </svg>
+            Ajustes
+          </button>
+        </div>
+        <div class="menu-footer">
+          <span class="menu-version">v0.1.0</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Pantalla Mis Parcelas -->
+    <div id="parcels-screen" class="screen" style="display: none;">
+      <div class="menu-bg"></div>
+      <div class="screen-container">
+        <div class="screen-header">
+          <button class="screen-back-btn" id="btn-parcels-back">
+            <svg viewBox="0 0 24 24" fill="currentColor">
+              <path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/>
+            </svg>
+          </button>
+          <h2 class="screen-title">Mis Parcelas</h2>
+        </div>
+        <div class="screen-body">
+          <!-- Estado vacío -->
+          <div id="parcels-empty" class="parcels-empty">
+            <div class="parcels-empty-icon">
+              <svg viewBox="0 0 24 24" fill="currentColor">
+                <path d="M1 11v10h5v-6h4v6h5V11L8 4z M10 3v1.97l7 5V11h2v2h-2v2h2v2h-2v4h6V3H10zm9 6h-2V7h2v2z"/>
+              </svg>
+            </div>
+            <p class="parcels-empty-text">No tienes parcelas</p>
+            <p class="parcels-empty-sub">Compra tu primera parcela en la Tienda para empezar a construir</p>
+            <button class="menu-btn menu-btn-primary parcels-empty-btn" id="btn-parcels-to-shop">
+              <svg viewBox="0 0 24 24" fill="currentColor">
+                <path d="M7 18c-1.1 0-1.99.9-1.99 2S5.9 22 7 22s2-.9 2-2-.9-2-2-2zM1 2v2h2l3.6 7.59-1.35 2.45c-.16.28-.25.61-.25.96 0 1.1.9 2 2 2h12v-2H7.42c-.14 0-.25-.11-.25-.25l.03-.12.9-1.63h7.45c.75 0 1.41-.41 1.75-1.03l3.58-6.49c.08-.14.12-.31.12-.48 0-.55-.45-1-1-1H5.21l-.94-2H1zm16 16c-1.1 0-1.99.9-1.99 2s.89 2 1.99 2 2-.9 2-2-.9-2-2-2z"/>
+              </svg>
+              Ir a la Tienda
+            </button>
+          </div>
+          <!-- Lista de parcelas (se llena dinámicamente) -->
+          <div id="parcels-list" class="parcels-list"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Pantalla Ajustes -->
+    <div id="settings-screen" class="screen" style="display: none;">
+      <div class="menu-bg"></div>
+      <div class="screen-container">
+        <div class="screen-header">
+          <button class="screen-back-btn" id="btn-settings-back">
+            <svg viewBox="0 0 24 24" fill="currentColor">
+              <path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/>
+            </svg>
+          </button>
+          <h2 class="screen-title">Ajustes</h2>
+        </div>
+        <div class="screen-body">
+          <div class="settings-sections">
+            <!-- Sonido -->
+            <div class="settings-section">
+              <h3 class="settings-section-title">Sonido</h3>
+              <div class="settings-row">
+                <span class="settings-label">Musica</span>
+                <label class="toggle">
+                  <input type="checkbox" id="toggle-music" checked>
+                  <span class="toggle-slider"></span>
+                </label>
+              </div>
+              <div class="settings-row">
+                <span class="settings-label">Efectos de sonido</span>
+                <label class="toggle">
+                  <input type="checkbox" id="toggle-sfx" checked>
+                  <span class="toggle-slider"></span>
+                </label>
+              </div>
+            </div>
+            <!-- Gráficos -->
+            <div class="settings-section">
+              <h3 class="settings-section-title">Graficos</h3>
+              <div class="settings-row">
+                <span class="settings-label">Calidad</span>
+                <span class="settings-value">Media</span>
+              </div>
+              <div class="settings-row">
+                <span class="settings-label">Sombras</span>
+                <label class="toggle">
+                  <input type="checkbox" id="toggle-shadows" checked>
+                  <span class="toggle-slider"></span>
+                </label>
+              </div>
+            </div>
+            <!-- Cuenta -->
+            <div class="settings-section">
+              <h3 class="settings-section-title">Cuenta</h3>
+              <div class="settings-row">
+                <span class="settings-label">Jugador</span>
+                <span class="settings-value">Player1</span>
+              </div>
+              <button class="settings-btn-logout" id="btn-logout">Cerrar sesion</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Canvas 3D de Babylon.js -->
-    <canvas id="game-canvas"></canvas>
+    <canvas id="game-canvas" style="display: none;"></canvas>
 
     <!-- UI Overlay -->
-    <div id="ui-overlay">
+    <div id="ui-overlay" style="display: none;">
 
       <!-- HUD Superior Izquierda: Recursos -->
       <div id="hud-top-left">
@@ -46,8 +182,13 @@
         </div>
       </div>
 
-      <!-- HUD Superior Derecha: Settings y Shop -->
+      <!-- HUD Superior Derecha: Menú, Settings y Shop -->
       <div id="hud-top-right">
+        <button class="icon-btn" id="btn-back-menu" title="Volver al menu">
+          <svg viewBox="0 0 24 24" fill="currentColor">
+            <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/>
+          </svg>
+        </button>
         <button class="icon-btn" id="btn-settings">
           <svg viewBox="0 0 24 24" fill="currentColor">
             <path d="M19.14 12.94c.04-.31.06-.63.06-.94 0-.31-.02-.63-.06-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.04.31-.06.63-.06.94s.02.63.06.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/>

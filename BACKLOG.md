@@ -6,25 +6,25 @@ Backlog de tareas ordenado por prioridad. Cada tarea es lo suficientemente concr
 
 ## Fase 1: Menú Principal y Navegación
 
-### 1.1 Crear pantalla de menú principal
+### 1.1 Crear pantalla de menú principal ✅
 - Pantalla HTML/CSS que se muestra al abrir la app (antes de cargar el mundo 3D)
 - Botones: "Acceder al Mundo", "Mis Parcelas", "Tienda", "Ajustes"
 - Diseño mobile-first acorde al tema visual existente (dark theme)
 - El canvas 3D NO se carga hasta que el jugador pulse "Acceder al Mundo"
 
-### 1.2 Pantalla "Mis Parcelas"
+### 1.2 Pantalla "Mis Parcelas" ✅
 - Lista de parcelas del jugador con coordenadas (x, y)
 - Estado vacío: mensaje "No tienes parcelas. Compra tu primera parcela en la Tienda"
 - Cada parcela es clickeable para entrar directamente al mundo centrado en ella
 - Botón de volver al menú principal
 
-### 1.3 Pantalla de Ajustes (estructura básica)
+### 1.3 Pantalla de Ajustes (estructura básica) ✅
 - Pantalla con secciones placeholder: Sonido, Gráficos, Cuenta
 - Toggle de sonido on/off
 - Botón de cerrar sesión (placeholder)
 - Botón de volver al menú principal
 
-### 1.4 Navegación entre pantallas
+### 1.4 Navegación entre pantallas ✅
 - Sistema de routing simple entre: Menú → Mundo / Parcelas / Tienda / Ajustes
 - Transiciones suaves entre pantallas
 - Botón de volver al menú desde el mundo 3D (icono en HUD)
