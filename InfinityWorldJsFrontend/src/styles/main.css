@@ -1087,6 +1087,318 @@ html, body {
   opacity: 1;
 }
 
+/* ===== PANTALLA TIENDA ===== */
+.shop-coins {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: linear-gradient(180deg, rgba(60, 60, 80, 0.95) 0%, rgba(40, 40, 60, 0.95) 100%);
+  padding: 6px 14px 6px 8px;
+  border-radius: 20px;
+  border: 2px solid rgba(255, 215, 0, 0.3);
+  color: #FFD700;
+  font-weight: 700;
+  font-size: 15px;
+}
+
+.shop-section-tabs {
+  display: flex;
+  gap: 0;
+  margin-bottom: 12px;
+  background: rgba(30, 30, 50, 0.6);
+  border-radius: 12px;
+  padding: 3px;
+  flex-shrink: 0;
+}
+
+.shop-section-tab {
+  flex: 1;
+  padding: 10px 16px;
+  border: none;
+  border-radius: 10px;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 14px;
+  font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.shop-section-tab.active {
+  background: linear-gradient(180deg, rgba(79, 195, 247, 0.9) 0%, rgba(3, 169, 244, 0.9) 100%);
+  color: white;
+  box-shadow: 0 2px 8px rgba(3, 169, 244, 0.3);
+}
+
+.shop-section {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.shop-era-tabs {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+  flex-shrink: 0;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255,255,255,0.2) transparent;
+}
+
+.shop-era-tab {
+  flex-shrink: 0;
+  padding: 7px 14px;
+  border: 2px solid rgba(255, 255, 255, 0.1);
+  border-radius: 20px;
+  background: rgba(50, 50, 70, 0.8);
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 12px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.shop-era-tab:hover {
+  border-color: rgba(255, 255, 255, 0.2);
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.shop-era-tab.active {
+  background: linear-gradient(180deg, rgba(90, 130, 180, 0.95) 0%, rgba(70, 110, 160, 0.95) 100%);
+  color: white;
+  border-color: rgba(130, 180, 230, 0.4);
+}
+
+.shop-category-filters {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.shop-cat-filter {
+  padding: 5px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 14px;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 11px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.shop-cat-filter.active {
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+  border-color: rgba(255, 255, 255, 0.25);
+}
+
+.shop-items-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 10px;
+  padding-bottom: 20px;
+}
+
+/* Shop Item Card */
+.shop-item-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 14px 10px 12px;
+  background: linear-gradient(180deg, rgba(60, 60, 80, 0.95) 0%, rgba(40, 40, 60, 0.95) 100%);
+  border: 2px solid rgba(255, 255, 255, 0.1);
+  border-radius: 14px;
+  cursor: pointer;
+  transition: all 0.15s;
+  position: relative;
+}
+
+.shop-item-card:hover {
+  border-color: rgba(79, 195, 247, 0.4);
+  transform: translateY(-2px);
+}
+
+.shop-item-card:active {
+  transform: scale(0.97);
+}
+
+.shop-item-card.unlocked {
+  border-color: rgba(100, 200, 100, 0.3);
+}
+
+.shop-item-card.unlocked::after {
+  content: '';
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #66BB6A, #43A047);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='white'%3E%3Cpath d='M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z'/%3E%3C/svg%3E");
+  background-size: 12px;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+.shop-item-icon {
+  width: 56px;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 38px;
+  margin-bottom: 8px;
+  background: rgba(0, 0, 0, 0.25);
+  border-radius: 10px;
+}
+
+.shop-item-name {
+  font-size: 12px;
+  font-weight: 600;
+  color: white;
+  text-align: center;
+  line-height: 1.2;
+  margin-bottom: 4px;
+  min-height: 28px;
+  display: flex;
+  align-items: center;
+}
+
+.shop-item-meta {
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.4);
+  margin-bottom: 6px;
+}
+
+.shop-item-price {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.3);
+}
+
+.shop-item-price.free {
+  color: #66BB6A;
+}
+
+.shop-item-price.paid {
+  color: #FFD700;
+}
+
+.shop-item-price .cost-icon {
+  width: 12px;
+  height: 12px;
+  background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%);
+  border-radius: 50%;
+}
+
+/* Buy object dialog icon */
+.buy-object-icon {
+  width: 64px;
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 44px;
+  margin: 0 auto 12px;
+  background: rgba(0, 0, 0, 0.25);
+  border-radius: 14px;
+}
+
+/* ===== PARCELAS EN TIENDA ===== */
+.shop-parcels-info {
+  padding: 12px 16px;
+  background: linear-gradient(180deg, rgba(60, 60, 80, 0.8) 0%, rgba(40, 40, 60, 0.8) 100%);
+  border: 2px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  margin-bottom: 10px;
+  flex-shrink: 0;
+}
+
+.shop-parcels-desc {
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.6);
+  line-height: 1.4;
+}
+
+.shop-parcels-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 10px;
+  padding-bottom: 20px;
+}
+
+.shop-parcel-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 16px 12px;
+  background: linear-gradient(180deg, rgba(60, 60, 80, 0.95) 0%, rgba(40, 40, 60, 0.95) 100%);
+  border: 2px solid rgba(255, 255, 255, 0.1);
+  border-radius: 14px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.shop-parcel-card:hover {
+  border-color: rgba(79, 195, 247, 0.4);
+  transform: translateY(-2px);
+}
+
+.shop-parcel-card:active {
+  transform: scale(0.97);
+}
+
+.shop-parcel-card.owned {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+.shop-parcel-coords {
+  font-size: 16px;
+  font-weight: 700;
+  color: white;
+  margin-bottom: 4px;
+}
+
+.shop-parcel-distance {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.4);
+  margin-bottom: 8px;
+}
+
+.shop-parcel-price {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #FFD700;
+  padding: 4px 12px;
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.3);
+}
+
+.shop-parcel-price .cost-icon {
+  width: 12px;
+  height: 12px;
+  background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%);
+  border-radius: 50%;
+}
+
 /* ===== OCULTAR ELEMENTOS ===== */
 .hidden {
   display: none !important;

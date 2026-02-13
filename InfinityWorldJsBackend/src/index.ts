@@ -9,7 +9,7 @@ import { createRepositories, Repositories } from "./repositories/factory";
 import { runAllSeeds } from "./seed";
 import { logger } from "./logger";
 import { requestLogger, errorHandler } from "./middleware";
-import { playerRoutes, parcelRoutes, catalogRoutes } from "./routes";
+import { playerRoutes, parcelRoutes, catalogRoutes, shopRoutes } from "./routes";
 
 config();
 
@@ -68,6 +68,7 @@ async function start() {
   app.use("/parcels", parcelRoutes(repos));
   app.use("/players", playerRoutes(repos));
   app.use("/catalog", catalogRoutes(repos));
+  app.use("/shop", shopRoutes(repos));
   app.use(errorHandler);
 
   // Seeds iniciales (mundo + catálogo)

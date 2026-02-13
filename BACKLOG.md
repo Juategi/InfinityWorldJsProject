@@ -190,33 +190,87 @@ Backlog de tareas ordenado por prioridad. Cada tarea es lo suficientemente concr
 
 ## Fase 5: Tienda
 
-### 5.1 Pantalla de tienda - estructura y navegación
+### 5.1 Pantalla de tienda - estructura y navegación ✅
 
 - Pantalla accesible desde menú principal y desde el HUD en el mundo
 - Tabs/filtros: por época (Medieval, Colonial, Industrial, Moderna, Futurista)
 - Sub-filtros: Edificios, Decoración, Naturaleza
 - Indicador de "Gratis" vs precio en monedas
 
-### 5.2 Cards de objetos en la tienda
+### 5.2 Cards de objetos en la tienda ✅
 
 - Card para cada objeto: icono/preview, nombre, tamaño, época, precio
 - Estado: Disponible (gratis), Comprable (con precio), Ya comprado (desbloqueado)
 - Botón de compra con confirmación
 - Objetos gratuitos marcados claramente
 
-### 5.3 Lógica de desbloqueo de objetos
+### 5.3 Lógica de desbloqueo de objetos ✅
 
 - Endpoint POST /shop/buy/:objectId (validar saldo, descontar monedas, añadir a inventario)
 - Los objetos gratuitos se desbloquean automáticamente al registrarse
 - En el panel de construcción (edit mode), solo mostrar objetos desbloqueados
 - (Nota: el modelo PlayerInventory y repositorios ya existen desde tarea 2.6)
 
-### 5.4 Sección de parcelas en la tienda
+### 5.4 Sección de parcelas en la tienda ✅
 
 - Lista de parcelas disponibles para comprar
 - Mapa mini mostrando parcelas disponibles cerca del jugador
 - Precio variable según distancia al centro (más lejos = más barato o más caro, por decidir)
 - Compra directa desde la tienda
+
+---
+
+## Fase 5B: Gestión de Parcelas - Mundo Infinito
+
+### 5B.1 Sistema de coordenadas escalable ✅
+
+- Definir convención de coordenadas: enteros con signo (x, y) desde el origen (0, 0)
+- Las parcelas solo existen en BD cuando se compran; el mundo vacío es implícito
+- Crear tipo `ParcelCoord` con codificación eficiente para claves únicas (ej: `"x:y"` como string, o packed integer para lookups rápidos)
+- Evaluar estrategia de indexado en PostgreSQL para coordenadas grandes: índice compuesto `(x, y)` UNIQUE + índice espacial PostGIS `POINT(x, y)` para queries de área
+- Documentar límites prácticos del sistema (ej: INT4 soporta ±2 mil millones → más que suficiente)
+- Considerar chunk grouping para queries de viewport: agrupar parcelas en chunks de NxN para cargar regiones eficientemente
+
+### 5B.2 Restricción de proximidad en compra de parcelas ✅
+
+- Un jugador solo puede comprar una parcela que esté a máximo 20 parcelas de distancia (Manhattan o Chebyshev, por decidir) de alguna de sus parcelas existentes
+- Si el jugador no tiene ninguna parcela, puede comprar cualquiera dentro de un radio de 20 parcelas del origen (0, 0)
+- Implementar en backend: endpoint POST /parcels/buy valida la restricción de proximidad antes de permitir la compra
+- Query eficiente: dado un punto (x, y) y un playerId, verificar si existe al menos una parcela del jugador a distancia ≤ 20
+- Devolver error descriptivo si la parcela está fuera de rango ("Debes tener una parcela cercana para comprar aquí")
+- Tests unitarios para los edge cases: primera parcela, parcela en el límite (dist=20), parcela fuera (dist=21), jugador con múltiples parcelas
+
+### 5B.3 Precio dinámico de parcelas por distancia al centro ✅
+
+- Definir fórmula de precio basada en distancia al origen: más cerca del centro → más caro (mayor demanda)
+- Fórmula sugerida: `precio = BASE_PRICE + DISTANCE_FACTOR * max(0, MAX_DISTANCE - distancia)` o fórmula logarítmica para que no escale linealmente
+- El precio debe ser determinista: dado (x, y), siempre devuelve el mismo precio (calculable tanto en frontend como backend)
+- Crear función compartida `calculateParcelPrice(x: number, y: number): number`
+- El backend valida el precio al comprar (no confiar en el frontend)
+
+### 5B.4 API de descubrimiento de parcelas ✅
+
+- Endpoint GET /parcels/area?x=0&y=0&radius=10 que devuelva las parcelas compradas dentro de un área
+- Endpoint GET /parcels/available?playerId=X que devuelva las posiciones donde el jugador puede comprar (basado en restricción de proximidad 5B.2)
+- Optimizar con PostGIS: `ST_DWithin` o bounding box para queries espaciales
+- Paginar resultados si el área es muy grande
+- Respuesta incluye: parcelas compradas (con dueño) + coordenadas disponibles para compra (sin datos, solo posiciones)
+
+### 5B.5 Actualizar tienda de parcelas con datos dinámicos ✅
+
+- Reemplazar el grid fijo (-3 a 3) de la tienda por parcelas dinámicas basadas en la posición del jugador
+- Mostrar parcelas comprables según la restricción de proximidad (solo las que el jugador realmente puede comprar)
+- Calcular y mostrar el precio dinámico de cada parcela
+- Indicador visual de distancia al origen y a la parcela propia más cercana
+- Si el jugador no tiene parcelas, mostrar las disponibles cerca del origen
+
+### 5B.6 Visualización del mundo infinito en frontend ✅
+
+- El mundo no tiene bordes fijos: al moverse, se generan/destruyen parcelas dinámicamente (ya existe parcialmente con ParcelManager)
+- Parcelas sin dueño se muestran como terreno vacío (con bioma cuando exista)
+- Parcelas compradas se muestran con el indicador del dueño y sus edificios
+- Parcelas "comprables" (dentro del radio de 20 del jugador) muestran un indicador sutil de "disponible"
+- No se renderizan parcelas más allá del viewport del jugador
 
 ---
 
@@ -447,6 +501,109 @@ Backlog de tareas ordenado por prioridad. Cada tarea es lo suficientemente concr
 - Dropdown/selector de idioma en la pantalla de Ajustes
 - Persistir preferencia en localStorage
 - Aplicar cambio de idioma en caliente sin recargar la app
+
+---
+
+## Fase 13: Seguridad y Validación del Backend
+
+### 13.1 Middleware de autorización por ownership
+
+- Crear middleware `requirePlayer` que extraiga el `playerId` del contexto autenticado (header, token JWT, sesión, etc.)
+- Inyectar `req.playerId` en todas las rutas protegidas
+- Temporalmente (hasta que Firebase Auth esté en Fase 11) usar un header `X-Player-Id` con validación de existencia en BD
+- **Aplicar a rutas críticas**: POST `/players/:id/coins`, POST `/parcels/buy`, POST `/shop/buy`, GET `/players/:id/inventory`, GET `/players/:id/balance`
+- Validar que el `playerId` de la request coincida con el del jugador autenticado (un jugador NO puede actuar en nombre de otro)
+- Devolver 401 si no hay jugador identificado, 403 si intenta actuar sobre otro jugador
+- Tests: petición sin auth → 401, petición con auth sobre otro jugador → 403, petición legítima → 200
+
+### 13.2 Validación estricta de inputs en todos los endpoints
+
+- Instalar librería de validación de esquemas (`zod` recomendado)
+- **POST `/players/:id/coins`**: validar que `amount` sea entero, distinto de 0, con límite razonable (ej: -100000 ≤ amount ≤ 100000). Rechazar NaN, Infinity, floats
+- **POST `/parcels/buy`**: validar que `x` e `y` sean enteros dentro de rangos razonables (ej: -1000000 ≤ x,y ≤ 1000000). Rechazar NaN, Infinity, floats, strings
+- **POST `/shop/buy`**: validar que `objectId` sea un UUID v4 válido
+- **GET `/parcels/`**: validar que `x`, `y` sean números válidos y `radius` sea entero positivo ≤ 50
+- **GET `/parcels/available`**: validar que `playerId` sea UUID v4 válido
+- **GET `/catalog/`**: validar que `era` y `category` sean valores del enum permitido (no strings arbitrarios)
+- **GET `/players/:id/*`**: validar que `:id` sea UUID v4 válido
+- Crear schemas reutilizables: `UUIDSchema`, `CoordinateSchema`, `CoinAmountSchema`
+- Middleware genérico `validate(schema)` que parsee body/query/params y devuelva 400 con errores descriptivos
+- Tests: enviar NaN, Infinity, strings donde van números, UUIDs malformados, valores fuera de rango → todos 400
+
+### 13.3 Transacciones atómicas en operaciones de compra
+
+- **POST `/parcels/buy`**: envolver en transacción PostgreSQL (`BEGIN` → verificar propiedad → verificar proximidad → verificar saldo → descontar monedas → crear/asignar parcela → `COMMIT`)
+- **POST `/shop/buy`**: envolver en transacción (`BEGIN` → verificar existencia objeto → verificar no duplicado → verificar saldo → descontar monedas → insertar inventario → `COMMIT`)
+- Usar `SELECT ... FOR UPDATE` en la fila del jugador para evitar race conditions (bloqueo optimista a nivel de fila)
+- Crear helper `withTransaction(callback)` en el módulo `db.ts` que maneje `BEGIN`/`COMMIT`/`ROLLBACK` automáticamente
+- Si cualquier paso falla → `ROLLBACK` completo, ningún cambio persiste
+- Tests de concurrencia: lanzar 10 compras simultáneas de la misma parcela → solo 1 éxito, 9 rechazos. Lanzar 10 compras del mismo objeto → solo 1 cobro
+
+### 13.4 Rate limiting por IP y por jugador
+
+- Instalar `express-rate-limit` (o similar)
+- **Rate limit global**: máximo 100 requests/minuto por IP
+- **Rate limit en endpoints de compra** (`/parcels/buy`, `/shop/buy`, `/players/:id/coins`): máximo 10 requests/minuto por IP
+- **Rate limit en endpoints de lectura costosos** (`/parcels/available`): máximo 20 requests/minuto por IP
+- Respuesta 429 Too Many Requests con header `Retry-After`
+- Considerar usar Redis como store del rate limiter para que funcione con múltiples instancias del backend
+- Tests: enviar ráfaga de peticiones → verificar que se bloquean tras el límite
+
+### 13.5 Configuración CORS
+
+- Instalar paquete `cors`
+- Configurar origins permitidos desde variable de entorno `ALLOWED_ORIGINS` (ej: `http://localhost:5173` en dev)
+- Permitir solo métodos necesarios: GET, POST (y OPTIONS para preflight)
+- Permitir headers: `Content-Type`, `Authorization`, `X-Player-Id`
+- Denegar credentials de orígenes no permitidos
+- En producción, restringir a los dominios exactos del frontend
+
+### 13.6 Restricciones de integridad en base de datos
+
+- **Migración**: añadir constraint `UNIQUE(x, y)` en tabla `parcels` (evitar dos parcelas en la misma coordenada)
+- **Migración**: añadir `FOREIGN KEY (owner_id) REFERENCES players(id)` en tabla `parcels`
+- **Migración**: añadir `FOREIGN KEY (parcel_id) REFERENCES parcels(id)` en tabla `placed_objects`
+- **Migración**: añadir `CHECK (coins >= 0)` en tabla `players` (reforzar a nivel de BD que no haya saldo negativo)
+- **Migración**: añadir `CHECK (price >= 0)` en tabla `placeable_objects`
+- Verificar que la constraint `UNIQUE(player_id, object_id)` en `player_inventory` ya existe (la usa el `ON CONFLICT`)
+- Ejecutar migración y verificar que los datos existentes cumplen las restricciones
+- Tests: intentar insertar parcela duplicada en (x,y) → error de BD capturado y devuelto como 409
+
+### 13.7 Proteger endpoint de monedas (admin-only)
+
+- El endpoint POST `/players/:id/coins` es extremadamente peligroso: permite sumar/restar monedas arbitrariamente
+- **Opción A (recomendada)**: eliminar el endpoint público. Las monedas solo se modifican internamente (compras de parcelas, compras de objetos, recompensas del sistema)
+- **Opción B**: restringir a un rol `admin` verificado por token especial (header `X-Admin-Key` o claim JWT `role: admin`)
+- Si se mantiene, añadir logging detallado de cada operación (quién, cuánto, desde qué IP, timestamp)
+- Crear endpoint alternativo GET `/players/:id/transactions` para consultar historial de movimientos (audit trail)
+
+### 13.8 Sanitización de errores en producción
+
+- En modo producción (`NODE_ENV=production`), NO devolver mensajes de error internos ni stack traces
+- Los errores `AppError` (controlados) devuelven su mensaje personalizado
+- Los errores inesperados (500) devuelven solo `"Internal server error"` sin detalles
+- Crear whitelist de mensajes de error seguros para cada endpoint
+- Filtrar datos sensibles de los logs en producción (no loggear bodies con tokens, passwords, etc.)
+- El endpoint `/health` en producción no debe revelar nombres de servicios internos (solo `"status": "ok"` o `"status": "degraded"`)
+
+### 13.9 Audit logging para transacciones económicas
+
+- Crear tabla `economy_log` con columnas: `id`, `player_id`, `action` (enum: `buy_parcel`, `buy_object`, `earn_coins`, `spend_coins`), `amount`, `balance_before`, `balance_after`, `metadata` (JSONB con detalles como parcel coords, object id, etc.), `ip_address`, `created_at`
+- Registrar automáticamente en cada operación que modifique monedas o inventario
+- Endpoint GET `/admin/economy-log` (protegido) para consultar historial
+- Índice por `player_id` y `created_at` para queries eficientes
+- Retención configurable (ej: mantener últimos 90 días)
+
+### 13.10 Tests de seguridad automatizados
+
+- Crear suite de tests específica para seguridad (`tests/security/`)
+- **Tests de autenticación**: requests sin auth a endpoints protegidos → 401
+- **Tests de autorización**: jugador A intenta modificar recursos de jugador B → 403
+- **Tests de validación**: inputs malformados (NaN, Infinity, strings, overflow, inyección SQL en strings libres) → 400
+- **Tests de race conditions**: compras concurrentes con `Promise.all()` → solo 1 éxito
+- **Tests de rate limiting**: ráfaga de peticiones → 429 tras el límite
+- **Tests de integridad**: operaciones que violen constraints de BD → error controlado
+- Integrar en CI/CD para que se ejecuten en cada PR
 
 ---
 

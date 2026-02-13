@@ -1,5 +1,6 @@
 import { Game } from '../game/Game'
 import { BuildingManager } from '../game/BuildingManager'
+import { isUnlocked } from '../game/PlayerInventory'
 import type { BuildingType, BuildingCategory } from '../game/Building'
 import type { GameMode } from '../types'
 
@@ -266,7 +267,7 @@ export class UIManager {
 
   private populateBuildingList(): void {
     const allBuildings = BuildingManager.getBuildingTypes()
-    const buildings = allBuildings.filter(b => b.category === this.currentCategory)
+    const buildings = allBuildings.filter(b => b.category === this.currentCategory && isUnlocked(b.id))
 
     this.buildItems.innerHTML = buildings.map(building => `
       <button class="build-item ${this.game.state.coins < building.cost ? 'disabled' : ''}" data-building-type="${building.id}">

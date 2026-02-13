@@ -8,7 +8,7 @@ import { ExecuteCodeAction } from '@babylonjs/core/Actions/directActions'
 import type { Mesh } from '@babylonjs/core/Meshes/mesh'
 import type { LinesMesh } from '@babylonjs/core/Meshes/linesMesh'
 import type { Parcel } from '../types'
-import { WORLD_CONFIG } from '../config/world'
+import { WORLD_CONFIG, chebyshevDistance, MAX_BUY_DISTANCE } from '../config/world'
 
 interface LoadedParcel {
   parcel: Parcel
@@ -26,8 +26,21 @@ export class ParcelManager {
   private onEditParcelCallback: ((parcel: Parcel) => void) | null = null
   private onBuyParcelCallback: ((parcel: Parcel) => void) | null = null
 
+  /** Parcelas propiedad del jugador local (para calcular zona de compra) */
+  private playerParcels: Parcel[] = []
+
   constructor(scene: Scene) {
     this.scene = scene
+  }
+
+  /** Establecer las parcelas del jugador para determinar zona de compra */
+  setPlayerParcels(parcels: Parcel[]): void {
+    this.playerParcels = parcels
+  }
+
+  /** Añadir una parcela recién comprada a la lista del jugador */
+  addPlayerParcel(parcel: Parcel): void {
+    this.playerParcels.push(parcel)
   }
 
   onEditParcel(callback: (parcel: Parcel) => void): void {
@@ -56,10 +69,23 @@ export class ParcelManager {
     }
   }
 
+  /**
+   * Comprueba si una coordenada está dentro de la zona de compra del jugador.
+   * - Si tiene parcelas: a ≤ MAX_BUY_DISTANCE de alguna propia
+   * - Si no tiene: a ≤ MAX_BUY_DISTANCE del origen
+   */
+  private isPurchasable(px: number, py: number): boolean {
+    if (this.playerParcels.length === 0) {
+      return chebyshevDistance(px, py, 0, 0) <= MAX_BUY_DISTANCE
+    }
+    return this.playerParcels.some(
+      p => chebyshevDistance(px, py, p.x, p.y) <= MAX_BUY_DISTANCE
+    )
+  }
+
   async updateFromCameraPosition(cameraTarget: Vector3): Promise<void> {
     const parcelCoords = this.worldToParcelCoords(cameraTarget.x, cameraTarget.z)
 
-    // Si no hemos cambiado de parcela, no hacer nada
     if (parcelCoords.x === this.currentParcelX && parcelCoords.y === this.currentParcelY) {
       return
     }
@@ -87,20 +113,21 @@ export class ParcelManager {
   private async loadParcel(parcelX: number, parcelY: number): Promise<void> {
     const key = this.getParcelKey(parcelX, parcelY)
 
-    // Crear parcela local (en producción vendría del servidor)
-    // Solo la parcela (0,0) tiene dueño por ahora
-    const hasOwner = parcelX === 0 && parcelY === 0
+    // Determinar si tiene dueño (en producción vendría del servidor)
+    const isOwned = this.playerParcels.some(p => p.x === parcelX && p.y === parcelY)
     const parcel: Parcel = {
       id: key,
-      ownerId: hasOwner ? 'player1' : null,
+      ownerId: isOwned ? 'player1' : null,
       x: parcelX,
       y: parcelY,
     }
 
+    const purchasable = !isOwned && this.isPurchasable(parcelX, parcelY)
+
     const worldCoords = this.parcelToWorldCoords(parcelX, parcelY)
     const size = WORLD_CONFIG.PARCEL_SIZE
 
-    // Crear ground de la parcela
+    // Crear ground
     const ground = MeshBuilder.CreateGround(
       `parcel_ground_${key}`,
       { width: size, height: size },
@@ -109,26 +136,27 @@ export class ParcelManager {
     ground.position.x = worldCoords.x + size / 2
     ground.position.z = worldCoords.z + size / 2
 
-    // Material del terreno (diferente si tiene dueño)
     const material = new StandardMaterial(`parcel_material_${key}`, this.scene)
-    if (hasOwner) {
-      material.diffuseColor = new Color3(0.35, 0.55, 0.25) // Verde más vivo
+    if (isOwned) {
+      material.diffuseColor = new Color3(0.35, 0.55, 0.25)
+    } else if (purchasable) {
+      material.diffuseColor = new Color3(0.28, 0.45, 0.25) // Verde intermedio para comprables
     } else {
-      material.diffuseColor = new Color3(0.25, 0.4, 0.2) // Verde más apagado
+      material.diffuseColor = new Color3(0.22, 0.35, 0.18) // Verde más apagado fuera de rango
     }
     material.specularColor = new Color3(0.1, 0.1, 0.1)
     ground.material = material
     ground.isPickable = true
 
-    // Crear borde (rojo si tiene dueño, gris si no)
-    const border = this.createParcelBorder(parcelX, parcelY, key, hasOwner)
+    // Borde: azul si comprable, rojo si propia, gris si fuera de rango
+    const border = this.createParcelBorder(parcelX, parcelY, key, isOwned, purchasable)
 
-    // Crear icono de edición solo si tiene dueño, icono de compra si no
+    // Iconos
     let editIcon: Mesh | null = null
     let buyIcon: Mesh | null = null
-    if (hasOwner) {
+    if (isOwned) {
       editIcon = this.createEditIcon(parcelX, parcelY, key, parcel)
-    } else {
+    } else if (purchasable) {
       buyIcon = this.createBuyIcon(parcelX, parcelY, key, parcel)
     }
 
@@ -139,23 +167,20 @@ export class ParcelManager {
     const worldCoords = this.parcelToWorldCoords(parcelX, parcelY)
     const size = WORLD_CONFIG.PARCEL_SIZE
 
-    // Crear cubo como icono de edición
     const icon = MeshBuilder.CreateBox(
       `parcel_edit_icon_${key}`,
       { size: 5 },
       this.scene
     )
     icon.position.x = worldCoords.x + size / 2
-    icon.position.y = 10 // Flotando sobre el terreno
+    icon.position.y = 10
     icon.position.z = worldCoords.z + size / 2
 
-    // Material naranja para el icono
     const iconMaterial = new StandardMaterial(`edit_icon_material_${key}`, this.scene)
     iconMaterial.diffuseColor = new Color3(1, 0.6, 0)
     iconMaterial.emissiveColor = new Color3(0.3, 0.2, 0)
     icon.material = iconMaterial
 
-    // Hacer clickeable
     icon.isPickable = true
     icon.actionManager = new ActionManager(this.scene)
     icon.actionManager.registerAction(
@@ -176,7 +201,6 @@ export class ParcelManager {
     const worldCoords = this.parcelToWorldCoords(parcelX, parcelY)
     const size = WORLD_CONFIG.PARCEL_SIZE
 
-    // Crear diamante (esfera aplastada) como icono de compra
     const icon = MeshBuilder.CreateSphere(
       `parcel_buy_icon_${key}`,
       { diameter: 4, segments: 8 },
@@ -187,13 +211,11 @@ export class ParcelManager {
     icon.position.z = worldCoords.z + size / 2
     icon.scaling.y = 0.6
 
-    // Material verde/dorado para el icono de compra
     const iconMaterial = new StandardMaterial(`buy_icon_material_${key}`, this.scene)
     iconMaterial.diffuseColor = new Color3(0.2, 0.8, 0.3)
     iconMaterial.emissiveColor = new Color3(0.05, 0.2, 0.05)
     icon.material = iconMaterial
 
-    // Hacer clickeable
     icon.isPickable = true
     icon.actionManager = new ActionManager(this.scene)
     icon.actionManager.registerAction(
@@ -210,17 +232,23 @@ export class ParcelManager {
     return icon
   }
 
-  private createParcelBorder(parcelX: number, parcelY: number, key: string, hasOwner: boolean): LinesMesh {
+  private createParcelBorder(
+    parcelX: number,
+    parcelY: number,
+    key: string,
+    hasOwner: boolean,
+    purchasable: boolean
+  ): LinesMesh {
     const worldCoords = this.parcelToWorldCoords(parcelX, parcelY)
     const size = WORLD_CONFIG.PARCEL_SIZE
-    const y = 0.05 // Ligeramente elevado para evitar z-fighting
+    const y = 0.05
 
     const points = [
       new Vector3(worldCoords.x, y, worldCoords.z),
       new Vector3(worldCoords.x + size, y, worldCoords.z),
       new Vector3(worldCoords.x + size, y, worldCoords.z + size),
       new Vector3(worldCoords.x, y, worldCoords.z + size),
-      new Vector3(worldCoords.x, y, worldCoords.z), // Cerrar el cuadrado
+      new Vector3(worldCoords.x, y, worldCoords.z),
     ]
 
     const border = MeshBuilder.CreateLines(
@@ -228,8 +256,14 @@ export class ParcelManager {
       { points },
       this.scene
     )
-    // Rojo si tiene dueño, gris si no
-    border.color = hasOwner ? new Color3(1, 0.3, 0.3) : new Color3(0.4, 0.4, 0.4)
+
+    if (hasOwner) {
+      border.color = new Color3(1, 0.3, 0.3) // Rojo: parcela propia
+    } else if (purchasable) {
+      border.color = new Color3(0.3, 0.6, 1) // Azul: disponible para comprar
+    } else {
+      border.color = new Color3(0.3, 0.3, 0.3) // Gris oscuro: fuera de rango
+    }
 
     return border
   }
@@ -278,22 +312,24 @@ export class ParcelManager {
     const loaded = this.loadedParcels.get(key)
     if (!loaded) return
 
-    // Update parcel data
     loaded.parcel.ownerId = ownerId
 
-    // Change ground color to owned
+    // Actualizar color del suelo
     const material = loaded.ground.material as StandardMaterial
     material.diffuseColor = new Color3(0.35, 0.55, 0.25)
 
-    // Change border color to owned
+    // Actualizar borde a rojo (propia)
     loaded.border.color = new Color3(1, 0.3, 0.3)
 
-    // Remove buy icon, add edit icon
+    // Remover icono de compra, añadir icono de edición
     if (loaded.buyIcon) {
       loaded.buyIcon.dispose()
       loaded.buyIcon = null
     }
     loaded.editIcon = this.createEditIcon(x, y, key, loaded.parcel)
+
+    // Añadir a parcelas del jugador
+    this.addPlayerParcel(loaded.parcel)
   }
 
   getCurrentParcelCoords(): { x: number; y: number } {
