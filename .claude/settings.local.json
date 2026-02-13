@@ -17,7 +17,9 @@
       "Bash(docker ps:*)",
       "Bash(npm run migrate:up:*)",
       "Bash(docker exec:*)",
-      "Bash(npm run migrate:down:*)"
+      "Bash(npm run migrate:down:*)",
+      "Bash(claude --version:*)",
+      "Bash(npm run seed:*)"
     ]
   }
 }

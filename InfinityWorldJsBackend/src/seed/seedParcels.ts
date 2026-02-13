@@ -8,7 +8,7 @@ export async function seedWorld(
   let player = await playerRepo.findByName("Player1");
 
   if (!player) {
-    player = await playerRepo.create({ name: "Player1" });
+    player = await playerRepo.create({ name: "Player1", coins: 500 });
     console.log(`👤 Created player: ${player.name} (${player.id})`);
   }
 

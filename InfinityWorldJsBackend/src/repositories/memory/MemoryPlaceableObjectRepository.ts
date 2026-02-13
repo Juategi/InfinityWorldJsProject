@@ -22,6 +22,20 @@ export class MemoryPlaceableObjectRepository implements IPlaceableObjectReposito
     return Array.from(this.objects.values());
   }
 
+  async findByEra(era: string): Promise<PlaceableObject[]> {
+    return Array.from(this.objects.values()).filter((o) => o.era === era);
+  }
+
+  async findByCategory(category: string): Promise<PlaceableObject[]> {
+    return Array.from(this.objects.values()).filter(
+      (o) => o.category === category
+    );
+  }
+
+  async findFree(): Promise<PlaceableObject[]> {
+    return Array.from(this.objects.values()).filter((o) => o.isFree);
+  }
+
   async create(data: Omit<PlaceableObject, "id">): Promise<PlaceableObject> {
     const obj: PlaceableObject = {
       id: randomUUID(),

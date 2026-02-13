@@ -9,6 +9,10 @@ export class MemoryPlayerRepository implements IPlayerRepository {
     return this.players.get(id) || null;
   }
 
+  async findAll(): Promise<Player[]> {
+    return Array.from(this.players.values());
+  }
+
   async findByName(name: string): Promise<Player | null> {
     for (const player of this.players.values()) {
       if (player.name === name) {

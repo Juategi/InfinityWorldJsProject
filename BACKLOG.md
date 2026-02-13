@@ -54,37 +54,40 @@ Backlog de tareas ordenado por prioridad. Cada tarea es lo suficientemente concr
 - Habilitar extensión PostGIS en la BD
 - Índices espaciales en tabla `parcels` (columna geometry con PostGIS)
 
-### 2.4 Repositorios PostgreSQL - Player y Parcel
+### 2.4 Repositorios PostgreSQL - Player y Parcel ✅
 - Implementar `PgPlayerRepository` siguiendo la interfaz `IPlayerRepository`
 - Implementar `PgParcelRepository` siguiendo la interfaz `IParcelRepository`
 - Query espacial con PostGIS para `findInArea(x, y, radius)`
 - Factory o config para elegir entre repositorios Memory vs Pg según entorno
 
-### 2.5 Repositorios PostgreSQL - PlacedObject y PlaceableObject
-- Implementar `PgPlacedObjectRepository` siguiendo la interfaz existente
-- Implementar `PgPlaceableObjectRepository` siguiendo la interfaz existente
-- Queries con JOINs para cargar objetos de una parcela con sus datos de catálogo
+### 2.5 Actualizar modelos TypeScript para coincidir con BD ✅
+- Añadir `coins` al modelo `Player` (la columna ya existe en BD)
+- Añadir a `PlaceableObject`: `category`, `era`, `price`, `isFree`, `description`
+- Crear modelo `PlayerInventory` (`id`, `playerId`, `objectId`, `unlockedAt`)
+- Actualizar `PgPlayerRepository` para leer/escribir `coins`
+- Actualizar `IPlaceableObjectRepository` con métodos de filtrado: `findByEra()`, `findByCategory()`, `findFree()`
 
-### 2.6 Configuración de Redis
+### 2.6 Repositorios PostgreSQL - PlacedObject, PlaceableObject y PlayerInventory ✅
+- Implementar `PgPlacedObjectRepository` siguiendo la interfaz existente
+- Implementar `PgPlaceableObjectRepository` con los nuevos campos y filtros
+- Crear `IPlayerInventoryRepository`: `findByPlayerId()`, `hasObject()`, `unlock()`, `remove()`
+- Implementar `MemoryPlayerInventoryRepository` y `PgPlayerInventoryRepository`
+- Queries con JOINs para cargar objetos de una parcela con sus datos de catálogo
+- Añadir PlayerInventory a la factory de repositorios
+
+### 2.7 Configuración de Redis ✅
 - Conectar Redis desde el backend (ioredis)
 - Módulo `redis.ts` centralizado
 - Uso inicial: caché de sesiones y datos frecuentes
 - Health check que verifique conexión a Redis
 
-### 2.7 Autenticación básica
-- Registro simple: nombre + contraseña (bcrypt para hash)
-- Login: devuelve JWT token
-- Middleware Express para validar JWT en rutas protegidas
-- Endpoints: POST /auth/register, POST /auth/login, GET /auth/me
-- Guardar jugador en tabla `players` al registrarse con monedas iniciales
-
-### 2.8 Seeders de catálogo y datos iniciales
+### 2.8 Seeders de catálogo y datos iniciales ✅
 - Script de seeding que inserte el catálogo de objetos en la BD
 - Marcar cuáles son gratuitos y cuáles premium con sus precios
 - Crear datos iniciales de prueba (parcelas del mundo)
 - Ejecutable como comando: `npm run seed`
 
-### 2.9 Middleware de errores y logging
+### 2.9 Middleware de errores y logging ✅
 - Middleware global de errores en Express (captura excepciones, devuelve JSON consistente)
 - Logger básico (winston o pino) con niveles: error, warn, info, debug
 - Log de requests HTTP (método, ruta, status, duración)
@@ -94,11 +97,11 @@ Backlog de tareas ordenado por prioridad. Cada tarea es lo suficientemente concr
 
 ## Fase 3: Sistema de Economía y Monedas
 
-### 3.1 Modelo de monedas en backend
-- Añadir campo `coins` al modelo Player (migración)
+### 3.1 Endpoints de monedas en backend
 - Endpoints REST: GET /players/:id/balance, POST /players/:id/coins (añadir/gastar)
 - Validación de saldo suficiente antes de cualquier compra
 - Transacciones atómicas para evitar race conditions
+- (Nota: el campo `coins` en Player y BD ya existe desde tareas 2.3 y 2.5)
 
 ### 3.2 Mostrar monedas en el frontend
 - Reemplazar el sistema actual de gold/gems por un sistema unificado de monedas
@@ -116,10 +119,11 @@ Backlog de tareas ordenado por prioridad. Cada tarea es lo suficientemente concr
 
 ## Fase 4: Catálogo Ampliado de Edificios y Objetos
 
-### 4.1 Definir estructura de datos del catálogo
-- Modelo `PlaceableObject` con campos: id, nombre, categoría, época, tamaño (w×h), precio en monedas, esGratis, descripción, meshType
-- Tabla/colección en backend con el catálogo completo
-- Endpoint GET /catalog para obtener todos los objetos disponibles
+### 4.1 Endpoint de catálogo y filtros
+- Endpoint GET /catalog con filtros por época, categoría y gratis/premium
+- Endpoint GET /catalog/:id para detalle de un objeto
+- Endpoint GET /players/:id/inventory para objetos desbloqueados del jugador
+- (Nota: el modelo PlaceableObject con campos completos y la tabla ya existen desde tareas 2.3 y 2.5)
 
 ### 4.2 Catálogo época Medieval (15-20 objetos)
 - Edificios: Castillo (5×5), Torre de vigilancia (2×2), Herrería (3×3), Casa de madera (2×2), Muralla de piedra (1×1), Taberna (3×2), Iglesia medieval (3×4), Granero (3×3)
@@ -176,11 +180,10 @@ Backlog de tareas ordenado por prioridad. Cada tarea es lo suficientemente concr
 - Objetos gratuitos marcados claramente
 
 ### 5.3 Lógica de desbloqueo de objetos
-- Backend: modelo de inventario del jugador (objetos desbloqueados)
-- Endpoint POST /shop/buy/:objectId
-- Validar saldo, descontar monedas, añadir a inventario
-- Los objetos gratuitos se desbloquean automáticamente
+- Endpoint POST /shop/buy/:objectId (validar saldo, descontar monedas, añadir a inventario)
+- Los objetos gratuitos se desbloquean automáticamente al registrarse
 - En el panel de construcción (edit mode), solo mostrar objetos desbloqueados
+- (Nota: el modelo PlayerInventory y repositorios ya existen desde tarea 2.6)
 
 ### 5.4 Sección de parcelas en la tienda
 - Lista de parcelas disponibles para comprar
@@ -304,6 +307,49 @@ Backlog de tareas ordenado por prioridad. Cada tarea es lo suficientemente concr
 ### 10.3 Interacciones sociales básicas
 - Tocar un jugador para ver su perfil
 - Lista de jugadores online
+
+---
+
+## Fase 11: Autenticación (Firebase)
+
+### 11.1 Configuración de Firebase Auth
+- Crear proyecto en Firebase Console
+- Configurar proveedores de autenticación (email/password, Google)
+- Instalar `firebase-admin` en el backend
+- Configurar credenciales de Firebase (service account) en `.env`
+
+### 11.2 Middleware de autenticación en backend
+- Middleware Express que valide Firebase ID tokens en cabecera `Authorization: Bearer <token>`
+- Endpoint GET /auth/me que devuelva datos del jugador autenticado
+- Al autenticar por primera vez, crear jugador en tabla `players` con monedas iniciales
+- Proteger rutas sensibles (compras, acciones de construcción)
+
+### 11.3 Integración Firebase Auth en frontend
+- Instalar Firebase SDK en el frontend
+- Pantalla de login/registro (email + Google)
+- Almacenar token y enviarlo en las requests al backend
+- Enviar token en el handshake de Colyseus para identificar al jugador
+- Actualizar pantalla de Ajustes con datos reales del usuario (nombre, email, foto)
+
+---
+
+## Fase 12: Internacionalización (i18n)
+
+### 12.1 Sistema de traducciones
+- Crear módulo i18n con diccionarios JSON por idioma (es, en como mínimo)
+- Función `t(key)` para obtener textos traducidos
+- Detección automática del idioma del navegador/dispositivo
+- Fallback a español si el idioma no está soportado
+
+### 12.2 Traducir UI del frontend
+- Traducir todas las pantallas: menú principal, parcelas, tienda, ajustes, HUD
+- Traducir toasts, diálogos de confirmación y mensajes de error
+- Traducir nombres de categorías y eras en el catálogo
+
+### 12.3 Selector de idioma en Ajustes
+- Dropdown/selector de idioma en la pantalla de Ajustes
+- Persistir preferencia en localStorage
+- Aplicar cambio de idioma en caliente sin recargar la app
 
 ---
 

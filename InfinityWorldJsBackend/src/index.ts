@@ -4,34 +4,36 @@ import { createServer } from "http";
 import express from "express";
 import { config } from "dotenv";
 import { checkConnection, closePool } from "./db";
-import {
-  MemoryPlayerRepository,
-  MemoryParcelRepository,
-  MemoryPlaceableObjectRepository,
-  MemoryPlacedObjectRepository,
-} from "./repositories";
-import { seedWorld } from "./seed/seedParcels";
+import { connectRedis, checkRedisConnection, closeRedis } from "./redis";
+import { createRepositories, Repositories } from "./repositories/factory";
+import { runAllSeeds } from "./seed";
 import { WORLD_CONFIG } from "./config/world";
+import { logger } from "./logger";
+import { requestLogger, errorHandler } from "./middleware";
 
 config();
 
-// Inicializar repositorios
-export const playerRepository = new MemoryPlayerRepository();
-export const parcelRepository = new MemoryParcelRepository();
-export const placeableObjectRepository = new MemoryPlaceableObjectRepository();
-export const placedObjectRepository = new MemoryPlacedObjectRepository();
+// Repositorios se inicializan en start() según disponibilidad de BD
+let repos: Repositories;
 
 const app = express();
 const port = Number(process.env.PORT) || 3000;
 
 app.use(express.json());
+app.use(requestLogger);
 
 // Health check
 app.get("/health", async (_req, res) => {
   const dbOk = await checkConnection();
-  const status = dbOk ? "ok" : "degraded";
-  const code = dbOk ? 200 : 503;
-  res.status(code).json({ status, db: dbOk ? "connected" : "disconnected" });
+  const redisOk = await checkRedisConnection();
+  const allOk = dbOk && redisOk;
+  const status = allOk ? "ok" : "degraded";
+  const code = allOk ? 200 : 503;
+  res.status(code).json({
+    status,
+    db: dbOk ? "connected" : "disconnected",
+    redis: redisOk ? "connected" : "disconnected",
+  });
 });
 
 // API: Obtener parcelas en un área
@@ -40,9 +42,11 @@ app.get("/parcels", async (req, res) => {
   const y = Number(req.query.y) || 0;
   const radius = Number(req.query.radius) || 2;
 
-  const parcels = await parcelRepository.findInArea(x, y, radius);
+  const parcels = await repos.parcel.findInArea(x, y, radius);
   res.json({ parcels, parcelSize: WORLD_CONFIG.PARCEL_SIZE });
 });
+
+app.use(errorHandler);
 
 const server = createServer(app);
 
@@ -54,30 +58,42 @@ const gameServer = new Server({
 // gameServer.define("world", WorldRoom);
 
 async function start() {
-  // Verificar conexión a BD
+  // Verificar conexión a BD e inicializar repositorios
   const dbOk = await checkConnection();
+  repos = createRepositories(dbOk);
+
   if (dbOk) {
-    console.log("✅ PostgreSQL connected");
+    logger.info("PostgreSQL connected → using PG repositories");
   } else {
-    console.warn("⚠️  PostgreSQL not available, running with in-memory repositories");
+    logger.warn("PostgreSQL not available → using in-memory repositories");
   }
 
-  // Seed inicial del mundo
-  await seedWorld(playerRepository, parcelRepository);
+  // Conectar a Redis
+  try {
+    await connectRedis();
+    logger.info("Redis connected");
+  } catch {
+    logger.warn("Redis not available");
+  }
+
+  // Seeds iniciales (mundo + catálogo)
+  await runAllSeeds(repos);
 
   await gameServer.listen(port);
-  console.log(`🎮 Colyseus server running on http://localhost:${port}`);
+  logger.info(`Colyseus server running on http://localhost:${port}`);
 }
 
 // Graceful shutdown
 process.on("SIGTERM", async () => {
-  console.log("Shutting down...");
+  logger.info("Shutting down...");
+  await closeRedis();
   await closePool();
   process.exit(0);
 });
 
 process.on("SIGINT", async () => {
-  console.log("Shutting down...");
+  logger.info("Shutting down...");
+  await closeRedis();
   await closePool();
   process.exit(0);
 });
