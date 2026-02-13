@@ -94,11 +94,20 @@ InfinityWorldJsProject/
 #### Configuración (.env)
 ```
 PORT=3000
-DATABASE_URL=postgresql://user:password@localhost:5432/infinity_world
+DATABASE_URL=postgresql://iw_user:iw_dev_pass@localhost:5432/infinity_world
 REDIS_URL=redis://localhost:6379
 ```
 
 ## Comandos
+
+### Docker (servicios de infraestructura)
+```bash
+# Desde la raíz del proyecto
+docker compose up -d       # Levantar PostgreSQL + Redis en background
+docker compose down        # Parar servicios
+docker compose logs -f     # Ver logs en tiempo real
+docker compose ps          # Ver estado de los servicios
+```
 
 ### Frontend
 ```bash

@@ -9,7 +9,15 @@
       "Bash(npm run build:*)",
       "Bash(dir:*)",
       "Bash(timeout 5 npm run dev:*)",
-      "Bash(npx vite:*)"
+      "Bash(npx vite:*)",
+      "Bash(docker compose:*)",
+      "Bash(npx tsx:*)",
+      "Bash(DATABASE_URL=\"postgresql://iw_user:iw_dev_pass@localhost:5432/infinity_world\" npx tsx:*)",
+      "Bash(node -e:*)",
+      "Bash(docker ps:*)",
+      "Bash(npm run migrate:up:*)",
+      "Bash(docker exec:*)",
+      "Bash(npm run migrate:down:*)"
     ]
   }
 }

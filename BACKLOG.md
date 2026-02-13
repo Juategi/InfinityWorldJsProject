@@ -33,21 +33,21 @@ Backlog de tareas ordenado por prioridad. Cada tarea es lo suficientemente concr
 
 ## Fase 2: Infraestructura Backend
 
-### 2.1 Docker Compose para servicios
+### 2.1 Docker Compose para servicios ✅
 - `docker-compose.yml` en la raíz del proyecto
 - Servicios: PostgreSQL 16 + PostGIS 3.4, Redis 7
 - Volúmenes persistentes para datos de BD
 - Variables de entorno configurables
 - Documentar comandos en CLAUDE.md (`docker compose up -d`, etc.)
 
-### 2.2 Conexión a PostgreSQL desde el backend
+### 2.2 Conexión a PostgreSQL desde el backend ✅
 - Instalar y configurar driver PostgreSQL (pg + @types/pg)
 - Pool de conexiones con configuración desde .env
 - Módulo `db.ts` centralizado para obtener conexiones
 - Health check que verifique conexión a BD
 - Manejo de errores de conexión y reconexión
 
-### 2.3 Sistema de migraciones
+### 2.3 Sistema de migraciones ✅
 - Instalar herramienta de migraciones (node-pg-migrate o similar)
 - Script npm: `npm run migrate:up`, `npm run migrate:down`, `npm run migrate:create`
 - Migración inicial: crear tablas `players`, `parcels`, `placed_objects`, `placeable_objects`, `player_inventory`
