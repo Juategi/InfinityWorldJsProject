@@ -668,7 +668,43 @@ html, body {
   padding-top: max(12px, env(safe-area-inset-top));
   padding-right: max(12px, env(safe-area-inset-right));
   display: flex;
+  align-items: center;
   gap: 8px;
+}
+
+/* Connection indicator */
+.connection-indicator {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border-radius: 12px;
+  background: rgba(0, 0, 0, 0.5);
+  font-size: 11px;
+  color: #ccc;
+  height: 28px;
+}
+.connection-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #888;
+  flex-shrink: 0;
+}
+.connection-indicator.connected .connection-dot { background: #4caf50; }
+.connection-indicator.connected .connection-label { color: #a5d6a7; }
+.connection-indicator.connecting .connection-dot { background: #ff9800; animation: pulse-dot 1s infinite; }
+.connection-indicator.connecting .connection-label { color: #ffe0b2; }
+.connection-indicator.reconnecting .connection-dot { background: #ff9800; animation: pulse-dot 1s infinite; }
+.connection-indicator.reconnecting .connection-label { color: #ffe0b2; }
+.connection-indicator.disconnected .connection-dot { background: #f44336; }
+.connection-indicator.disconnected .connection-label { color: #ef9a9a; }
+.connection-indicator.error .connection-dot { background: #f44336; }
+.connection-indicator.error .connection-label { color: #ef9a9a; }
+
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
 }
 
 .icon-btn {

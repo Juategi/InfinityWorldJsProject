@@ -10,6 +10,7 @@ import { runAllSeeds } from "./seed";
 import { logger } from "./logger";
 import { requestLogger, errorHandler } from "./middleware";
 import { playerRoutes, parcelRoutes, catalogRoutes, shopRoutes } from "./routes";
+import { WorldRoom } from "./rooms/WorldRoom";
 
 config();
 
@@ -42,9 +43,6 @@ const gameServer = new Server({
   transport: new WebSocketTransport({ server }),
 });
 
-// TODO: Register rooms here
-// gameServer.define("world", WorldRoom);
-
 async function start() {
   // Verificar conexión a BD e inicializar repositorios
   const dbOk = await checkConnection();
@@ -70,6 +68,9 @@ async function start() {
   app.use("/catalog", catalogRoutes(repos));
   app.use("/shop", shopRoutes(repos));
   app.use(errorHandler);
+
+  // Registrar room de Colyseus (necesita repos)
+  gameServer.define("world", WorldRoom, { repos });
 
   // Seeds iniciales (mundo + catálogo)
   await runAllSeeds(repos);

@@ -3,6 +3,8 @@ import { UIManager } from './ui/UIManager'
 import { calculateParcelPrice, chebyshevDistance, MAX_BUY_DISTANCE } from './config/world'
 import { BUILDING_TYPES } from './game/Building'
 import { initInventory, isUnlocked, unlockObject } from './game/PlayerInventory'
+import { networkClient, type ConnectionState } from './network/NetworkClient'
+import { WorldSync } from './network/WorldSync'
 import type { BuildingType, BuildingCategory, BuildingEra } from './game/Building'
 import type { Parcel } from './types'
 
@@ -47,6 +49,27 @@ function showScreen(el: HTMLElement) {
   void el.offsetHeight
 }
 
+// --- Conexión ---
+
+const CONNECTION_LABELS: Record<ConnectionState, string> = {
+  disconnected: 'Offline',
+  connecting: 'Conectando...',
+  connected: 'Online',
+  reconnecting: 'Reconectando...',
+  error: 'Error',
+}
+
+function updateConnectionUI(state: ConnectionState) {
+  const el = document.getElementById('connection-indicator')
+  if (!el) return
+  el.className = `connection-indicator ${state}`
+  el.title = CONNECTION_LABELS[state]
+  const label = el.querySelector('.connection-label')
+  if (label) label.textContent = CONNECTION_LABELS[state]
+}
+
+networkClient.onStateChange(updateConnectionUI)
+
 // --- Navegación ---
 
 function hideAllScreens() {
@@ -65,6 +88,10 @@ function showMainMenu() {
   if (game) {
     game.stop()
   }
+
+  // Desconectar del servidor al volver al menú
+  if (game) game.setWorldSync(null)
+  networkClient.leave().catch(() => {})
 }
 
 async function enterWorld() {
@@ -107,6 +134,26 @@ async function enterWorld() {
   }
 
   game!.run()
+
+  // Conectar al servidor si no está conectado
+  if (networkClient.state !== 'connected') {
+    networkClient.joinWorld('player1').then(room => {
+      // Create sync layer between Colyseus room and game
+      const sync = new WorldSync(room, game!)
+      game!.setWorldSync(sync)
+    }).catch(err => {
+      console.warn('Could not connect to server:', err)
+      showToast('Modo offline - sin conexion al servidor')
+    })
+
+    // Re-create WorldSync on reconnection (new Room instance)
+    networkClient.onRoomChange(newRoom => {
+      if (game) {
+        const sync = new WorldSync(newRoom, game)
+        game.setWorldSync(sync)
+      }
+    })
+  }
 }
 
 // --- Pantalla Mis Parcelas ---
@@ -441,25 +488,30 @@ function confirmBuyParcel() {
     return
   }
 
-  // Deduct coins locally
+  const x = pendingBuyParcel.x
+  const y = pendingBuyParcel.y
+
+  // If connected to server, send via WorldSync
+  const sync = game.getWorldSync()
+  if (sync) {
+    sync.buyParcel(x, y)
+    hideBuyParcelDialog()
+    return
+  }
+
+  // Offline fallback: local only
   game.spendCoins(price)
 
-  // Update parcel visually
-  game.getParcelManager().markParcelAsOwned(
-    pendingBuyParcel.x,
-    pendingBuyParcel.y,
-    'player1'
-  )
+  game.getParcelManager().markParcelAsOwned(x, y, 'player1')
 
-  // Add to player parcels list
   playerParcels.push({
-    id: `${pendingBuyParcel.x},${pendingBuyParcel.y}`,
+    id: `${x},${y}`,
     ownerId: 'player1',
-    x: pendingBuyParcel.x,
-    y: pendingBuyParcel.y,
+    x,
+    y,
   })
 
-  showToast(`Parcela (${pendingBuyParcel.x}, ${pendingBuyParcel.y}) comprada!`)
+  showToast(`Parcela (${x}, ${y}) comprada!`)
   hideBuyParcelDialog()
   updateShopCoins()
   renderShopParcels()
@@ -581,4 +633,37 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('btn-buy-object-confirm')!.addEventListener('pointerdown', () => {
     confirmBuyObject()
   })
+
+  // --- Server events ---
+
+  document.addEventListener('parcelBought', ((e: CustomEvent) => {
+    const p = e.detail as { id: string; ownerId: string; x: number; y: number }
+    playerParcels.push({ id: p.id, ownerId: p.ownerId, x: p.x, y: p.y })
+    showToast(`Parcela (${p.x}, ${p.y}) comprada!`)
+    updateShopCoins()
+    renderShopParcels()
+  }) as EventListener)
+
+  document.addEventListener('serverActionError', ((e: CustomEvent) => {
+    const data = e.detail as { action: string; error: string }
+    showToast(data.error)
+  }) as EventListener)
+
+  document.addEventListener('playerDataLoaded', ((e: CustomEvent) => {
+    const data = e.detail as {
+      playerId: string;
+      coins: number;
+      parcels: Array<{ id: string; ownerId: string; x: number; y: number }>;
+      inventory: string[];
+    }
+    // Update local parcels list
+    playerParcels.length = 0
+    data.parcels.forEach(p => playerParcels.push(p))
+
+    // Unlock inventory objects
+    data.inventory.forEach(objId => unlockObject(objId))
+
+    // Update coins display
+    updateShopCoins()
+  }) as EventListener)
 })

@@ -21,7 +21,8 @@
       "Bash(claude --version:*)",
       "Bash(npm run seed:*)",
       "Bash(npx kill-port:*)",
-      "Bash(taskkill:*)"
+      "Bash(taskkill:*)",
+      "Bash(npm ls:*)"
     ]
   }
 }

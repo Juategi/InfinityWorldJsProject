@@ -276,35 +276,35 @@ Backlog de tareas ordenado por prioridad. Cada tarea es lo suficientemente concr
 
 ## Fase 6: Conexión Frontend-Backend (Colyseus)
 
-### 6.1 Cliente Colyseus en frontend
+### 6.1 Cliente Colyseus en frontend ✅
 
 - Instalar y configurar colyseus.js en el frontend
 - Conectar al servidor al entrar al mundo
 - Manejar estados de conexión (conectando, conectado, desconectado, reconectando)
 - Indicador visual de estado de conexión en el HUD
 
-### 6.2 Definir WorldRoom en Colyseus (backend)
+### 6.2 Definir WorldRoom en Colyseus (backend) ✅
 
 - Crear la Room principal con esquema de estado (Schema de Colyseus)
 - Estado sincronizado: parcelas visibles, edificios por parcela, jugadores online
 - Handlers: onJoin, onLeave, onMessage
 - Mensajes: requestParcels, placeBuild, moveBuild, deleteBuild, buyParcel
 
-### 6.3 Sincronización de parcelas
+### 6.3 Sincronización de parcelas ✅
 
 - Al moverse por el mundo, solicitar parcelas al servidor (reemplazar datos mock)
 - El servidor envía parcelas con sus edificios al cliente
 - Actualizar Grid y BuildingManager con datos del servidor
 - Carga/descarga dinámica sincronizada
 
-### 6.4 Sincronizar acciones de construcción
+### 6.4 Sincronizar acciones de construcción ✅
 
 - Al colocar/mover/rotar/eliminar un edificio → enviar mensaje al servidor
 - Servidor valida la acción (posición libre, tiene el objeto desbloqueado, etc.)
 - Servidor confirma → cliente aplica cambio
 - Servidor rechaza → cliente revierte la acción con feedback
 
-### 6.5 Persistencia de estado del jugador
+### 6.5 Persistencia de estado del jugador ✅
 
 - Al conectar, cargar: monedas, parcelas, inventario de objetos desbloqueados
 - Al desconectar, guardar estado
@@ -315,25 +315,25 @@ Backlog de tareas ordenado por prioridad. Cada tarea es lo suficientemente concr
 
 ## Fase 7: Mejoras Visuales del Mundo
 
-### 7.1 Terreno del mundo mejorado
+### 7.1 Terreno del mundo mejorado ✅
 
 - Diferentes texturas de suelo para parcelas propias vs ajenas vs sin dueño
 - Bordes visuales claros entre parcelas
 - Mini-etiqueta flotante con nombre del dueño al acercarse a una parcela ajena
 
-### 7.2 Skybox y ambiente
+### 7.2 Skybox y ambiente ✅
 
 - Skybox con cielo (día)
 - Iluminación mejorada con sombras básicas
 - Niebla en la distancia para disimular el borde de carga
 
-### 7.3 Indicadores en el mundo
+### 7.3 Indicadores en el mundo ✅
 
 - Marcadores visuales de "parcela disponible" en parcelas sin dueño
 - Icono de precio flotante sobre parcelas comprables
 - Efecto visual al comprar una parcela (animación de desbloqueo)
 
-### 7.4 Sistema de biomas - Algoritmo de generación
+### 7.4 Sistema de biomas - Algoritmo de generación ✅
 
 - Crear módulo `BiomeGenerator` en el frontend (`src/game/BiomeGenerator.ts`)
 - Implementar ruido Simplex/Perlin determinista (librería `simplex-noise` o implementación propia)
@@ -344,7 +344,7 @@ Backlog de tareas ordenado por prioridad. Cada tarea es lo suficientemente concr
 - Seed fija hardcodeada para que todos los jugadores generen el mismo mundo
 - Tests unitarios: verificar determinismo (misma entrada = misma salida) y distribución razonable de biomas
 
-### 7.5 Sistema de biomas - Materiales y colores del suelo
+### 7.5 Sistema de biomas - Materiales y colores del suelo ✅
 
 - Definir paleta de colores del suelo por bioma:
   - **Pradera**: verde medio (#4a7a2e)
@@ -357,7 +357,7 @@ Backlog de tareas ordenado por prioridad. Cada tarea es lo suficientemente concr
 - Mantener la diferenciación visual de parcelas con dueño vs sin dueño (el bioma afecta al tono base, la propiedad al brillo/saturación)
 - El borde de la parcela también puede tintarse sutilmente según el bioma
 
-### 7.6 Sistema de biomas - Decoración procedural del terreno
+### 7.6 Sistema de biomas - Decoración procedural del terreno ✅
 
 - Generar elementos decorativos por bioma de forma determinista sobre cada parcela:
   - **Pradera**: hierba alta dispersa, flores pequeñas, piedras sueltas
@@ -371,7 +371,7 @@ Backlog de tareas ordenado por prioridad. Cada tarea es lo suficientemente concr
 - Las decoraciones se crean/destruyen junto con la parcela (carga/descarga dinámica)
 - Las decoraciones NO interfieren con la construcción (son puramente visuales, sin colisión en modo edición)
 
-### 7.7 Sistema de biomas - Transiciones suaves entre biomas
+### 7.7 Sistema de biomas - Transiciones suaves entre biomas ✅
 
 - En parcelas fronterizas (adyacentes a otro bioma), mezclar colores de suelo con interpolación
 - Consultar bioma de las 4 parcelas vecinas (N, S, E, O) para determinar si es frontera
@@ -604,6 +604,105 @@ Backlog de tareas ordenado por prioridad. Cada tarea es lo suficientemente concr
 - **Tests de rate limiting**: ráfaga de peticiones → 429 tras el límite
 - **Tests de integridad**: operaciones que violen constraints de BD → error controlado
 - Integrar en CI/CD para que se ejecuten en cada PR
+
+---
+
+## Fase 14: Minimapa y Navegación Rápida
+
+### 14.1 Componente base del minimapa (canvas 2D)
+
+- Crear módulo `src/ui/Minimap.ts` con clase `Minimap`
+- Insertar un `<canvas>` HTML dentro de `#ui-overlay`, posicionado en la esquina inferior izquierda
+- Tamaño por defecto: 160×160px en móvil, 200×200px en desktop. Borde redondeado, fondo oscuro semitransparente
+- El canvas se renderiza con la API Canvas 2D nativa (NO usar Babylon.js, es un overlay ligero)
+- Dibujar una cuadrícula básica donde cada celda = 1 parcela. El centro del minimapa corresponde a la posición actual de la cámara
+- Escala inicial: cada parcela ocupa ~8px en el minimapa (configurable)
+- El minimapa solo se muestra en modo mundo (`game.getMode() === 'world'`), se oculta en modo edición
+- Respetar `pointer-events: auto` solo sobre el canvas del minimapa (no bloquear el resto del overlay)
+- Actualizar el minimapa en cada frame o con throttle (~10 FPS es suficiente para fluidez)
+
+### 14.2 Renderizado de parcelas en el minimapa
+
+- Obtener las parcelas cargadas del `ParcelManager` (exponer getter `getLoadedParcels()` si no existe)
+- Pintar cada parcela como un cuadrado de color según su estado:
+  - **Parcela propia**: verde claro (#5a8a35)
+  - **Parcela de otro jugador**: rojo suave (#8a3535)
+  - **Parcela comprable** (dentro del radio de compra): azul suave (#35608a)
+  - **Sin dueño / fuera de rango**: gris oscuro (#2a2a2a) o simplemente no pintar (fondo vacío)
+- Dibujar las líneas de cuadrícula entre parcelas en gris sutil (#444)
+- Marcar el origen del mundo (0, 0) con un punto o icono especial (ej: estrella dorada, punto blanco) para referencia
+- Consultar al backend las parcelas de la zona ampliada del minimapa (radio mayor al de carga 3D) para mostrar parcelas más allá del viewport — o usar los datos que ya tenga cacheados
+- Leyenda compacta opcional (iconos de color) al mantener pulsado el minimapa
+
+### 14.3 Indicador de cámara y navegación por clic/tap
+
+- Dibujar un rectángulo semitransparente blanco sobre el minimapa que represente el viewport actual de la cámara 3D (la zona visible en pantalla)
+- Dibujar un marcador (triángulo, punto, o icono de jugador) en el centro del minimapa indicando la posición actual
+- **Click/tap en el minimapa**: mover la cámara 3D suavemente (animación lerp) a la coordenada del mundo correspondiente al punto tocado
+- Convertir coordenadas del canvas 2D → coordenadas de parcela → coordenadas de mundo → nuevo `camera.target`
+- **Drag en el minimapa**: permitir arrastrar para hacer pan continuo (mover la cámara mientras se arrastra el dedo/ratón sobre el minimapa)
+- Evitar que los eventos de tap/drag en el minimapa se propaguen al canvas 3D de Babylon.js (`stopPropagation`)
+
+### 14.4 Buscador de coordenadas (Go To)
+
+- Añadir un botón pequeño (icono de lupa o brújula) junto al minimapa o en la barra superior del HUD
+- Al pulsarlo, mostrar un diálogo/popup compacto con:
+  - Dos inputs numéricos: X e Y (con labels claros)
+  - Botón "Ir" / "Go"
+  - Botón de cerrar
+- Al confirmar: validar que X e Y sean enteros válidos, luego mover la cámara suavemente a la parcela (X, Y) con animación
+- Mostrar la coordenada actual de la cámara en texto pequeño debajo del minimapa (ej: "Pos: (3, -2)") actualizado en tiempo real
+- Atajo: si el jugador escribe coordenadas en formato "X, Y" o "X Y" en un solo input, parsearlas automáticamente
+- Tras navegar, el minimapa se recentra automáticamente en la nueva posición y se cargan las parcelas correspondientes
+
+### 14.5 Zoom del minimapa y modo expandido
+
+- **Zoom con scroll/pinch**: permitir hacer zoom in/out sobre el minimapa (cambiar la escala px/parcela)
+  - Zoom mínimo: 3px/parcela (vista amplia, ~50 parcelas visibles)
+  - Zoom máximo: 16px/parcela (vista detallada, ~10 parcelas visibles)
+- **Botones +/−**: dos botones pequeños en la esquina del minimapa para zoom (alternativa a scroll/pinch)
+- **Modo expandido**: al hacer doble tap o pulsar un botón de expandir, el minimapa crece a ~60% de la pantalla (overlay centrado con fondo oscuro detrás)
+  - En modo expandido: se ven más parcelas, se puede navegar con más precisión
+  - Tap fuera del minimapa expandido o botón de cerrar → vuelve al tamaño compacto
+  - En modo expandido se muestra la leyenda de colores completa
+- Guardar la preferencia de zoom en `localStorage`
+
+### 14.6 Datos del minimapa desde el backend (parcelas lejanas)
+
+- El minimapa necesita datos de parcelas más allá del `LOAD_RADIUS` de carga 3D (actualmente 2 parcelas)
+- Crear un sistema de petición de parcelas para el minimapa con radio mayor (ej: 25-50 parcelas) usando el endpoint existente GET `/parcels?x=...&y=...&radius=...`
+- Cachear los datos recibidos en un `Map<string, MinimapParcel>` donde `MinimapParcel` es un tipo ligero: `{ x, y, ownerId: string | null }`
+- Actualizar la caché del minimapa al moverse: cuando la cámara cruce un umbral de distancia (ej: cada 5 parcelas), hacer una nueva petición
+- Throttle/debounce de las peticiones para no sobrecargar el backend (máximo 1 petición cada 2 segundos)
+- Los datos del minimapa son solo para visualización — no interfieren con el sistema de carga 3D de `ParcelManager`
+
+---
+
+## Fase 15: Ciudad Inicial del Mundo
+
+### 15.1 Jugador sistema "Infinity" y parcelas centrales reservadas
+
+- Crear en el seeder un jugador especial con nombre `Infinity` (ID fijo/conocido, ej: UUID constante `00000000-0000-0000-0000-000000000000`)
+- Este jugador es propietario de las 4 parcelas centrales: `(0,0)`, `(1,0)`, `(0,1)`, `(1,1)`
+- Las parcelas del jugador Infinity NO pueden ser compradas por ningún jugador (validar en backend en POST `/parcels/buy`)
+- Marcar estas parcelas en BD como `system: true` o simplemente validar por `owner_id` del jugador Infinity
+- En el frontend, las parcelas del jugador Infinity se muestran con un estilo especial (diferente a parcelas de otros jugadores)
+
+### 15.2 Diseño y colocación de la ciudad inicial
+
+- Diseñar una ciudad predeterminada que ocupe las 4 parcelas centrales (espacio total: 2×2 parcelas = 32×32 celdas)
+- La ciudad debe ser un punto de referencia visual y temático del mundo (plaza central, edificios icónicos, etc.)
+- Usar objetos del catálogo existente (mezcla de épocas o una época específica, por decidir)
+- Colocar los `placed_objects` en BD durante el seeding (misma estructura que edificios de jugadores normales, pero owner = Infinity)
+- La ciudad debe verse bien desde todos los ángulos ya que es lo primero que verán los jugadores nuevos
+
+### 15.3 Restricciones y comportamiento especial de la ciudad
+
+- Los jugadores NO pueden entrar en modo edición en las parcelas de Infinity (bloquear en frontend y validar en backend)
+- Las parcelas de Infinity no aparecen como "comprables" en la tienda ni en el minimapa
+- En el minimapa, las parcelas de Infinity se muestran con un color especial (ej: dorado/amarillo) diferente a parcelas propias o ajenas
+- La etiqueta flotante sobre estas parcelas muestra "Infinity World" en lugar del nombre de un jugador
+- Los nuevos jugadores empiezan viendo la ciudad central como primer punto de referencia al entrar al mundo
 
 ---
 

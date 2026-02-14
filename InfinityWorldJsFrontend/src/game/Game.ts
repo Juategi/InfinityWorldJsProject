@@ -3,14 +3,17 @@ import { Scene } from '@babylonjs/core/scene'
 import { ArcRotateCamera } from '@babylonjs/core/Cameras/arcRotateCamera'
 import { HemisphericLight } from '@babylonjs/core/Lights/hemisphericLight'
 import { DirectionalLight } from '@babylonjs/core/Lights/directionalLight'
+import { ShadowGenerator } from '@babylonjs/core/Lights/Shadows/shadowGenerator'
 import { Vector3 } from '@babylonjs/core/Maths/math.vector'
 import { Color3, Color4 } from '@babylonjs/core/Maths/math.color'
+import '@babylonjs/core/Lights/Shadows/shadowGeneratorSceneComponent'
 import { Grid } from './Grid'
 import { BuildingManager } from './BuildingManager'
 import { InputManager } from './InputManager'
 import { ParcelManager } from './ParcelManager'
 import type { GameState, GameMode, Parcel } from '../types'
 import { WORLD_CONFIG } from '../config/world'
+import type { WorldSync } from '../network/WorldSync'
 
 export class Game {
   private canvas: HTMLCanvasElement
@@ -21,6 +24,8 @@ export class Game {
   private buildingManager!: BuildingManager
   private inputManager!: InputManager
   private parcelManager!: ParcelManager
+  private worldSync: WorldSync | null = null
+  private shadowGenerator: ShadowGenerator | null = null
 
   private currentMode: GameMode = 'world'
   private editingParcel: Parcel | null = null
@@ -77,7 +82,13 @@ export class Game {
     // Actualizar parcelas según movimiento de cámara (solo en modo mundo)
     this.scene.onBeforeRenderObservable.add(() => {
       if (this.currentMode === 'world') {
-        this.parcelManager.updateFromCameraPosition(this.camera.target)
+        // If connected to server, WorldSync handles parcel requests
+        if (this.worldSync) {
+          this.worldSync.updateCameraPosition(this.camera.target.x, this.camera.target.z)
+        } else {
+          // Offline fallback: load parcels locally
+          this.parcelManager.updateFromCameraPosition(this.camera.target)
+        }
       }
     })
   }
@@ -244,7 +255,7 @@ export class Game {
     hemisphericLight.diffuse = new Color3(1, 1, 1)
     hemisphericLight.groundColor = new Color3(0.4, 0.4, 0.5)
 
-    // Luz direccional (sol)
+    // Luz direccional (sol) con sombras
     const directionalLight = new DirectionalLight(
       'directionalLight',
       new Vector3(-1, -2, -1),
@@ -252,6 +263,22 @@ export class Game {
     )
     directionalLight.intensity = 0.8
     directionalLight.diffuse = new Color3(1, 0.95, 0.8)
+
+    // Sombras básicas
+    const shadowGen = new ShadowGenerator(1024, directionalLight)
+    shadowGen.useBlurExponentialShadowMap = true
+    shadowGen.blurScale = 2
+    this.shadowGenerator = shadowGen
+
+    // Niebla en la distancia para disimular borde de carga
+    this.scene.fogMode = Scene.FOGMODE_LINEAR
+    this.scene.fogColor = new Color3(0.4, 0.6, 0.9) // Mismo tono que cielo
+    this.scene.fogStart = 200
+    this.scene.fogEnd = 400
+  }
+
+  getShadowGenerator(): ShadowGenerator | null {
+    return this.shadowGenerator
   }
 
   run(): void {
@@ -299,7 +326,22 @@ export class Game {
     return this.parcelManager
   }
 
+  setWorldSync(sync: WorldSync | null): void {
+    if (this.worldSync) {
+      this.worldSync.dispose()
+    }
+    this.worldSync = sync
+  }
+
+  getWorldSync(): WorldSync | null {
+    return this.worldSync
+  }
+
   dispose(): void {
+    if (this.worldSync) {
+      this.worldSync.dispose()
+      this.worldSync = null
+    }
     this.parcelManager.dispose()
     this.engine.dispose()
   }
