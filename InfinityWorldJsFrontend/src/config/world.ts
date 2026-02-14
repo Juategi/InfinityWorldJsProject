@@ -1,21 +1,25 @@
 export const WORLD_CONFIG = {
-  PARCEL_SIZE: 100,
+  PARCEL_SIZE: 200,
   DETAIL_RADIUS: 2,    // Full detail: decorations, icons, labels
   LOAD_RADIUS: 4,      // LOD zone: ground + border only, no decorations
   UNLOAD_RADIUS: 5,    // Beyond this, parcels are unloaded
+  SYSTEM_PLAYER_ID: '00000000-0000-0000-0000-000000000000',
+  SYSTEM_PLAYER_NAME: 'Infinity',
+}
+
+const SYSTEM_PARCELS = [
+  { x: 0, y: 0 }, { x: 1, y: 0 }, { x: 0, y: 1 }, { x: 1, y: 1 },
+]
+
+export function isSystemParcel(x: number, y: number): boolean {
+  return SYSTEM_PARCELS.some(p => p.x === x && p.y === y)
 }
 
 /** Distancia máxima (Chebyshev) a la que un jugador puede comprar una parcela */
 export const MAX_BUY_DISTANCE = 20
 
-/** Precio base de una parcela (la más lejana del centro) */
-export const BASE_PARCEL_PRICE = 50
-
-/** Precio máximo de una parcela (en el centro) */
-export const MAX_PARCEL_PRICE = 500
-
-/** Radio a partir del cual el precio es el mínimo */
-export const PRICE_MAX_DISTANCE = 50
+/** Precio fijo de cualquier parcela */
+export const PARCEL_PRICE = 100
 
 export function parcelKey(x: number, y: number): string {
   return `${x}:${y}`
@@ -29,21 +33,4 @@ export function chebyshevDistance(
 
 export function distanceToOrigin(x: number, y: number): number {
   return Math.max(Math.abs(x), Math.abs(y))
-}
-
-/**
- * Precio determinista de una parcela basado en distancia al centro.
- * Más cerca del centro → más caro.
- */
-export function calculateParcelPrice(x: number, y: number): number {
-  const dist = distanceToOrigin(x, y)
-
-  if (dist >= PRICE_MAX_DISTANCE) return BASE_PARCEL_PRICE
-  if (dist === 0) return MAX_PARCEL_PRICE
-
-  const t = dist / PRICE_MAX_DISTANCE
-  const logT = Math.log(1 + t * 9) / Math.log(10)
-  const price = MAX_PARCEL_PRICE - (MAX_PARCEL_PRICE - BASE_PARCEL_PRICE) * logT
-
-  return Math.round(price)
 }

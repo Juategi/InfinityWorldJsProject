@@ -3,7 +3,8 @@ import { WorldState, ParcelSchema, PlacedObjectSchema, PlayerSchema } from "./sc
 import { Repositories } from "../repositories/factory";
 import { logger } from "../logger";
 import { WORLD_CONFIG } from "../config/world";
-import { chebyshevDistance, calculateParcelPrice, MAX_BUY_DISTANCE } from "../config/parcels";
+import { chebyshevDistance, PARCEL_PRICE, MAX_BUY_DISTANCE } from "../config/parcels";
+import { isSystemParcel, SYSTEM_PLAYER_ID } from "../config/system";
 
 /** Radius of parcels loaded around a player's camera */
 const VIEW_RADIUS = 3;
@@ -246,6 +247,12 @@ export class WorldRoom extends Room<WorldState> {
       return;
     }
 
+    // Block building on system parcels
+    if (parcel.ownerId === SYSTEM_PLAYER_ID) {
+      client.send("actionError", { action: "placeBuild", error: "No se puede construir en parcelas del sistema" });
+      return;
+    }
+
     // Validate object is unlocked
     const hasObject = await this.repos.playerInventory.hasObject(ps.id, objectId);
     if (!hasObject) {
@@ -362,6 +369,12 @@ export class WorldRoom extends Room<WorldState> {
     const { x, y } = msg;
     if (typeof x !== "number" || typeof y !== "number") return;
 
+    // Block system parcels
+    if (isSystemParcel(x, y)) {
+      client.send("actionError", { action: "buyParcel", error: "Las parcelas del sistema no se pueden comprar" });
+      return;
+    }
+
     // Check parcel not already owned
     const existing = await this.repos.parcel.findAtPosition(x, y);
     if (existing && existing.ownerId) {
@@ -385,7 +398,7 @@ export class WorldRoom extends Room<WorldState> {
     }
 
     // Check price and coins
-    const price = calculateParcelPrice(x, y);
+    const price = PARCEL_PRICE;
     const player = await this.repos.player.findById(ps.id);
     if (!player || player.coins < price) {
       client.send("actionError", { action: "buyParcel", error: "Monedas insuficientes" });

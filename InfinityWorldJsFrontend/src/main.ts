@@ -1,6 +1,6 @@
 import { Game } from './game/Game'
 import { UIManager } from './ui/UIManager'
-import { calculateParcelPrice, chebyshevDistance, MAX_BUY_DISTANCE } from './config/world'
+import { WORLD_CONFIG, PARCEL_PRICE, chebyshevDistance, MAX_BUY_DISTANCE } from './config/world'
 import { BUILDING_TYPES } from './game/Building'
 import { initInventory, isUnlocked, unlockObject, getUnlockedSet } from './game/PlayerInventory'
 import { networkClient, type ConnectionState } from './network/NetworkClient'
@@ -10,11 +10,13 @@ import { tutorial } from './ui/TutorialManager'
 import { audio } from './audio/AudioManager'
 import { quality, type QualityLevel } from './config/QualitySettings'
 import { t, getLang, setLang, getSupportedLanguages } from './i18n'
+import { Minimap } from './ui/Minimap'
 import type { BuildingType, BuildingCategory, BuildingEra } from './game/Building'
 import type { Parcel } from './types'
 
 let game: Game | null = null
 let ui: UIManager | null = null
+let minimap: Minimap | null = null
 let gameInitialized = false
 
 // Datos mock de parcelas del jugador (vacío = estado nuevo jugador)
@@ -97,6 +99,44 @@ function hideAllScreens() {
   document.getElementById('ui-overlay')!.style.display = 'none'
 }
 
+function setupGoToDialog(mm: Minimap) {
+  const dialog = document.getElementById('goto-dialog')!
+  const btnOpen = document.getElementById('minimap-goto-btn')!
+  const btnClose = document.getElementById('goto-close')!
+  const btnConfirm = document.getElementById('goto-confirm')!
+  const inputX = document.getElementById('goto-x') as HTMLInputElement
+  const inputY = document.getElementById('goto-y') as HTMLInputElement
+
+  btnOpen.addEventListener('click', (e) => {
+    e.stopPropagation()
+    dialog.style.display = ''
+    inputX.focus()
+  })
+
+  btnClose.addEventListener('click', () => {
+    dialog.style.display = 'none'
+  })
+
+  // Close on overlay click
+  dialog.addEventListener('click', (e) => {
+    if (e.target === dialog) dialog.style.display = 'none'
+  })
+
+  const doNavigate = () => {
+    const x = parseInt(inputX.value, 10)
+    const y = parseInt(inputY.value, 10)
+    if (isNaN(x) || isNaN(y)) return
+    mm.navigateToParcel(x, y)
+    dialog.style.display = 'none'
+  }
+
+  btnConfirm.addEventListener('click', doNavigate)
+
+  // Enter key in inputs
+  inputX.addEventListener('keydown', (e) => { if (e.key === 'Enter') doNavigate() })
+  inputY.addEventListener('keydown', (e) => { if (e.key === 'Enter') doNavigate() })
+}
+
 function showMainMenu() {
   hideAllScreens()
   showScreen(document.getElementById('main-menu')!)
@@ -132,6 +172,9 @@ async function enterWorld() {
     await game.init()
     game.getParcelManager().setPlayerParcels(playerParcels)
     ui.init()
+    minimap = new Minimap(game)
+    minimap.start()
+    setupGoToDialog(minimap)
     gameInitialized = true
 
     // Configurar botón de volver al menú
@@ -140,6 +183,20 @@ async function enterWorld() {
       btnBackMenu.addEventListener('pointerdown', (e) => {
         e.stopPropagation()
         showMainMenu()
+      })
+    }
+
+    // Go to city button
+    const btnGoCity = document.getElementById('btn-go-city')
+    if (btnGoCity) {
+      btnGoCity.addEventListener('pointerdown', (e) => {
+        e.stopPropagation()
+        // Navigate to center of the 4 system parcels
+        if (game) {
+          const cam = game.getCamera()
+          cam.target.x = WORLD_CONFIG.PARCEL_SIZE
+          cam.target.z = WORLD_CONFIG.PARCEL_SIZE
+        }
       })
     }
 
@@ -443,7 +500,7 @@ function renderShopParcels() {
         available.push({
           x: px,
           y: py,
-          price: calculateParcelPrice(px, py),
+          price: PARCEL_PRICE,
           dist: distToCenter,
           owned: false,
         })
@@ -481,7 +538,7 @@ function renderShopParcels() {
 }
 
 function onShopParcelClick(x: number, y: number) {
-  const price = calculateParcelPrice(x, y)
+  const price = PARCEL_PRICE
   if (getCoins() < price) {
     showToast(t('toast.notEnoughCoins'), 'error')
     return
@@ -505,7 +562,7 @@ let pendingBuyParcel: Parcel | null = null
 
 function showBuyParcelDialog(parcel: Parcel) {
   pendingBuyParcel = parcel
-  const price = calculateParcelPrice(parcel.x, parcel.y)
+  const price = PARCEL_PRICE
   const dialog = document.getElementById('buy-parcel-dialog')!
   document.getElementById('buy-parcel-x')!.textContent = String(parcel.x)
   document.getElementById('buy-parcel-y')!.textContent = String(parcel.y)
@@ -525,7 +582,7 @@ function hideBuyParcelDialog() {
 function confirmBuyParcel() {
   if (!pendingBuyParcel || !game) return
 
-  const price = calculateParcelPrice(pendingBuyParcel.x, pendingBuyParcel.y)
+  const price = PARCEL_PRICE
   if (game.state.coins < price) {
     showToast(t('toast.notEnoughCoins'), 'error')
     hideBuyParcelDialog()

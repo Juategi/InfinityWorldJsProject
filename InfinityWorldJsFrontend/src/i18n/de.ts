@@ -10,6 +10,7 @@ export const de: Record<string, string> = {
 
   // HUD
   'hud.backMenu': 'Zurück zum Menü',
+  'hud.goCity': 'Zur Stadt',
   'hud.notifications': 'Benachrichtigungen',
   'hud.players': 'Online-Spieler',
 
@@ -117,6 +118,10 @@ export const de: Record<string, string> = {
   'connection.connecting': 'Verbinden...',
   'connection.reconnecting': 'Wiederverbinden...',
   'connection.error': 'Fehler',
+
+  // Minimap
+  'minimap.goTo': 'Zu Koordinaten gehen',
+  'minimap.go': 'Los',
 
   // Toasts
   'toast.parcelPurchased': 'Parzelle ({x}, {y}) gekauft',

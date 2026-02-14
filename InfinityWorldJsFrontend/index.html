@@ -322,6 +322,11 @@
           <span class="connection-dot"></span>
           <span class="connection-label">Offline</span>
         </div>
+        <button class="icon-btn" id="btn-go-city" data-i18n-title="hud.goCity">
+          <svg viewBox="0 0 24 24" fill="currentColor">
+            <path d="M15 11V5l-3-3-3 3v2H3v14h18V11h-6zm-8 8H5v-2h2v2zm0-4H5v-2h2v2zm0-4H5V9h2v2zm6 8h-2v-2h2v2zm0-4h-2v-2h2v2zm0-4h-2V9h2v2zm0-4h-2V5h2v2zm6 12h-2v-2h2v2zm0-4h-2v-2h2v2z"/>
+          </svg>
+        </button>
         <button class="icon-btn" id="btn-players" data-i18n-title="hud.players">
           <svg viewBox="0 0 24 24" fill="currentColor">
             <path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/>
@@ -423,6 +428,41 @@
         </div>
         <div id="players-list" class="players-list">
           <!-- Populated dynamically -->
+        </div>
+      </div>
+
+      <!-- Minimapa (esquina inferior izquierda) -->
+      <div id="minimap-container">
+        <canvas id="minimap-canvas"></canvas>
+        <div id="minimap-coords">Pos: (0, 0)</div>
+        <div class="minimap-buttons">
+          <button id="minimap-zoom-in" class="minimap-btn" title="Zoom in">+</button>
+          <button id="minimap-zoom-out" class="minimap-btn" title="Zoom out">&minus;</button>
+          <button id="minimap-expand" class="minimap-btn" title="Expand">
+            <svg viewBox="0 0 24 24" fill="currentColor" width="12" height="12">
+              <path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/>
+            </svg>
+          </button>
+          <button id="minimap-goto-btn" class="minimap-btn" title="Go To">
+            <svg viewBox="0 0 24 24" fill="currentColor" width="12" height="12">
+              <path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- Go To dialog -->
+      <div id="goto-dialog" class="goto-overlay" style="display: none;">
+        <div class="goto-box">
+          <div class="goto-header">
+            <span data-i18n="minimap.goTo">Ir a coordenadas</span>
+            <button class="goto-close" id="goto-close">&times;</button>
+          </div>
+          <div class="goto-inputs">
+            <label>X <input type="number" id="goto-x" value="0" /></label>
+            <label>Y <input type="number" id="goto-y" value="0" /></label>
+          </div>
+          <button class="goto-btn" id="goto-confirm" data-i18n="minimap.go">Ir</button>
         </div>
       </div>
 

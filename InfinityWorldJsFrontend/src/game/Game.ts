@@ -118,10 +118,10 @@ export class Game {
     this.grid.setVisible(true)
     this.grid.createGround()
 
-    // Centrar cámara en el centro del grid (50, 50)
+    // Centrar cámara en el centro del grid
     const gridCenter = WORLD_CONFIG.PARCEL_SIZE / 2
     this.camera.target = new Vector3(gridCenter, 0, gridCenter)
-    this.camera.radius = 80
+    this.camera.radius = 150
 
     // Emitir evento para UI
     document.dispatchEvent(new CustomEvent('gameModeChange', {
@@ -154,7 +154,7 @@ export class Game {
     } else if (this.savedCameraPosition) {
       this.camera.target = this.savedCameraPosition
     }
-    this.camera.radius = 80
+    this.camera.radius = 120
 
     // Emitir evento para UI
     document.dispatchEvent(new CustomEvent('gameModeChange', {
@@ -171,11 +171,11 @@ export class Game {
   }
 
   private setupCamera(): void {
-    // Centro de la parcela (0,0)
+    // Centro de la ciudad (4 parcelas sistema: 0,0 / 1,0 / 0,1 / 1,1)
     const initialTarget = new Vector3(
-      WORLD_CONFIG.PARCEL_SIZE / 2,
+      WORLD_CONFIG.PARCEL_SIZE,  // 100 — center of 2×2 system grid
       0,
-      WORLD_CONFIG.PARCEL_SIZE / 2
+      WORLD_CONFIG.PARCEL_SIZE   // 100
     )
 
     // Cámara isométrica estilo Clash of Clans
@@ -183,14 +183,14 @@ export class Game {
       'camera',
       -Math.PI / 4,      // Alpha: rotación horizontal (45 grados)
       Math.PI / 3,       // Beta: ángulo vertical (~60 grados desde arriba)
-      80,                // Radio: distancia
-      initialTarget,     // Target: centro de parcela (0,0)
+      120,               // Radio: distancia
+      initialTarget,     // Target: centro de la ciudad
       this.scene
     )
 
     // Límites de zoom
-    this.camera.lowerRadiusLimit = 15
-    this.camera.upperRadiusLimit = 150
+    this.camera.lowerRadiusLimit = 20
+    this.camera.upperRadiusLimit = 300
 
     // Límites de ángulo vertical (evitar ver desde abajo)
     this.camera.lowerBetaLimit = Math.PI / 6
@@ -362,6 +362,10 @@ export class Game {
       return true
     }
     return false
+  }
+
+  getCamera(): ArcRotateCamera {
+    return this.camera
   }
 
   getParcelManager(): ParcelManager {

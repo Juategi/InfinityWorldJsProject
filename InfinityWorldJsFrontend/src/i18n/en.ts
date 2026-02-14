@@ -10,6 +10,7 @@ export const en: Record<string, string> = {
 
   // HUD
   'hud.backMenu': 'Back to menu',
+  'hud.goCity': 'Go to city',
   'hud.notifications': 'Notifications',
   'hud.players': 'Online players',
 
@@ -117,6 +118,10 @@ export const en: Record<string, string> = {
   'connection.connecting': 'Connecting...',
   'connection.reconnecting': 'Reconnecting...',
   'connection.error': 'Error',
+
+  // Minimap
+  'minimap.goTo': 'Go to coordinates',
+  'minimap.go': 'Go',
 
   // Toasts
   'toast.parcelPurchased': 'Parcel ({x}, {y}) purchased',

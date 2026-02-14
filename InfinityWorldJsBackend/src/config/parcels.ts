@@ -7,19 +7,13 @@
  */
 
 /** Tamaño de parcela en unidades del mundo */
-export const PARCEL_SIZE = 100;
+export const PARCEL_SIZE = 200;
 
 /** Distancia máxima (Chebyshev) a la que un jugador puede comprar una parcela */
 export const MAX_BUY_DISTANCE = 20;
 
-/** Precio base de una parcela (la más lejana del centro) */
-export const BASE_PARCEL_PRICE = 50;
-
-/** Precio máximo de una parcela (en el centro) */
-export const MAX_PARCEL_PRICE = 500;
-
-/** Radio a partir del cual el precio es el mínimo */
-export const PRICE_MAX_DISTANCE = 50;
+/** Precio fijo de cualquier parcela */
+export const PARCEL_PRICE = 100;
 
 /**
  * Clave única para una coordenada de parcela.
@@ -48,28 +42,4 @@ export function chebyshevDistance(
  */
 export function distanceToOrigin(x: number, y: number): number {
   return Math.max(Math.abs(x), Math.abs(y));
-}
-
-/**
- * Calcula el precio de una parcela basado en su distancia al centro.
- * Más cerca del centro → más caro (mayor demanda).
- *
- * Fórmula: interpolación logarítmica inversa.
- * - dist=0 → MAX_PARCEL_PRICE (500)
- * - dist>=PRICE_MAX_DISTANCE → BASE_PARCEL_PRICE (50)
- *
- * Determinista: dado (x, y) siempre devuelve el mismo precio.
- */
-export function calculateParcelPrice(x: number, y: number): number {
-  const dist = distanceToOrigin(x, y);
-
-  if (dist >= PRICE_MAX_DISTANCE) return BASE_PARCEL_PRICE;
-  if (dist === 0) return MAX_PARCEL_PRICE;
-
-  // Interpolación logarítmica: decae rápido cerca del centro, lento lejos
-  const t = dist / PRICE_MAX_DISTANCE; // 0..1
-  const logT = Math.log(1 + t * 9) / Math.log(10); // log10(1+t*9) → 0..1 con curva log
-  const price = MAX_PARCEL_PRICE - (MAX_PARCEL_PRICE - BASE_PARCEL_PRICE) * logT;
-
-  return Math.round(price);
 }

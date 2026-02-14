@@ -589,7 +589,7 @@ Backlog de tareas ordenado por prioridad. Cada tarea es lo suficientemente concr
 - Índice por `player_id` y `created_at` para queries eficientes
 - Retención configurable (ej: mantener últimos 90 días)
 
-### 13.10 Tests de seguridad automatizados
+### 13.10 Tests de seguridad automatizados ✅
 
 - Crear suite de tests específica para seguridad (`tests/security/`)
 - **Tests de autenticación**: requests sin auth a endpoints protegidos → 401
@@ -604,7 +604,7 @@ Backlog de tareas ordenado por prioridad. Cada tarea es lo suficientemente concr
 
 ## Fase 14: Minimapa y Navegación Rápida
 
-### 14.1 Componente base del minimapa (canvas 2D)
+### 14.1 Componente base del minimapa (canvas 2D) ✅
 
 - Crear módulo `src/ui/Minimap.ts` con clase `Minimap`
 - Insertar un `<canvas>` HTML dentro de `#ui-overlay`, posicionado en la esquina inferior izquierda
@@ -616,7 +616,7 @@ Backlog de tareas ordenado por prioridad. Cada tarea es lo suficientemente concr
 - Respetar `pointer-events: auto` solo sobre el canvas del minimapa (no bloquear el resto del overlay)
 - Actualizar el minimapa en cada frame o con throttle (~10 FPS es suficiente para fluidez)
 
-### 14.2 Renderizado de parcelas en el minimapa
+### 14.2 Renderizado de parcelas en el minimapa ✅
 
 - Obtener las parcelas cargadas del `ParcelManager` (exponer getter `getLoadedParcels()` si no existe)
 - Pintar cada parcela como un cuadrado de color según su estado:
@@ -629,7 +629,7 @@ Backlog de tareas ordenado por prioridad. Cada tarea es lo suficientemente concr
 - Consultar al backend las parcelas de la zona ampliada del minimapa (radio mayor al de carga 3D) para mostrar parcelas más allá del viewport — o usar los datos que ya tenga cacheados
 - Leyenda compacta opcional (iconos de color) al mantener pulsado el minimapa
 
-### 14.3 Indicador de cámara y navegación por clic/tap
+### 14.3 Indicador de cámara y navegación por clic/tap ✅
 
 - Dibujar un rectángulo semitransparente blanco sobre el minimapa que represente el viewport actual de la cámara 3D (la zona visible en pantalla)
 - Dibujar un marcador (triángulo, punto, o icono de jugador) en el centro del minimapa indicando la posición actual
@@ -638,7 +638,7 @@ Backlog de tareas ordenado por prioridad. Cada tarea es lo suficientemente concr
 - **Drag en el minimapa**: permitir arrastrar para hacer pan continuo (mover la cámara mientras se arrastra el dedo/ratón sobre el minimapa)
 - Evitar que los eventos de tap/drag en el minimapa se propaguen al canvas 3D de Babylon.js (`stopPropagation`)
 
-### 14.4 Buscador de coordenadas (Go To)
+### 14.4 Buscador de coordenadas (Go To) ✅
 
 - Añadir un botón pequeño (icono de lupa o brújula) junto al minimapa o en la barra superior del HUD
 - Al pulsarlo, mostrar un diálogo/popup compacto con:
@@ -650,7 +650,7 @@ Backlog de tareas ordenado por prioridad. Cada tarea es lo suficientemente concr
 - Atajo: si el jugador escribe coordenadas en formato "X, Y" o "X Y" en un solo input, parsearlas automáticamente
 - Tras navegar, el minimapa se recentra automáticamente en la nueva posición y se cargan las parcelas correspondientes
 
-### 14.5 Zoom del minimapa y modo expandido
+### 14.5 Zoom del minimapa y modo expandido ✅
 
 - **Zoom con scroll/pinch**: permitir hacer zoom in/out sobre el minimapa (cambiar la escala px/parcela)
   - Zoom mínimo: 3px/parcela (vista amplia, ~50 parcelas visibles)
@@ -662,7 +662,7 @@ Backlog de tareas ordenado por prioridad. Cada tarea es lo suficientemente concr
   - En modo expandido se muestra la leyenda de colores completa
 - Guardar la preferencia de zoom en `localStorage`
 
-### 14.6 Datos del minimapa desde el backend (parcelas lejanas)
+### 14.6 Datos del minimapa desde el backend (parcelas lejanas) ✅
 
 - El minimapa necesita datos de parcelas más allá del `LOAD_RADIUS` de carga 3D (actualmente 2 parcelas)
 - Crear un sistema de petición de parcelas para el minimapa con radio mayor (ej: 25-50 parcelas) usando el endpoint existente GET `/parcels?x=...&y=...&radius=...`
@@ -675,21 +675,21 @@ Backlog de tareas ordenado por prioridad. Cada tarea es lo suficientemente concr
 
 ## Fase 15: Ciudad Inicial del Mundo
 
-### 15.1 Jugador sistema "Infinity" y parcelas centrales reservadas
+### 15.1 Jugador sistema "Infinity" y parcelas centrales reservadas ✅
 
 - Definir constante `SYSTEM_PLAYER_ID = "00000000-0000-0000-0000-000000000000"` y `SYSTEM_PLAYER_NAME = "Infinity"` en un archivo compartido de config (ej: `src/config/system.ts` en backend, `src/config/world.ts` en frontend)
 - En el seeder (`seedParcels.ts`), antes de crear Player1, crear el jugador Infinity con ID fijo, nombre "Infinity" y 0 monedas. Usar `INSERT ... ON CONFLICT DO NOTHING` para que sea idempotente
 - Modificar el seeder para crear las 4 parcelas centrales `(0,0)`, `(1,0)`, `(0,1)`, `(1,1)` con `ownerId = SYSTEM_PLAYER_ID`. Actualmente el seeder asigna (0,0) a Player1 — cambiar eso: Player1 pasa a no tener parcela inicial (empieza con 0 parcelas como cualquier jugador nuevo)
 - Ajustar las monedas iniciales de Player1 (actualmente 500) para que tenga suficiente para comprar su primera parcela cerca del centro
 
-### 15.2 Bloqueo de parcelas sistema en el backend
+### 15.2 Bloqueo de parcelas sistema en el backend ✅
 
 - En POST `/parcels/buy`: añadir validación temprana que rechace compra si la parcela ya existe y su `ownerId === SYSTEM_PLAYER_ID`, con error 403 "System parcels cannot be purchased"
 - También rechazar si la coordenada está en la lista de parcelas sistema `[(0,0), (1,0), (0,1), (1,1)]` aunque la parcela aún no exista en BD (protección contra borrado accidental del seed)
 - En el handler de Colyseus `placeBuild`/`moveBuild`/`deleteBuild` (cuando exista): validar que el `parcelId` no pertenezca al jugador Infinity
 - Exportar función helper `isSystemParcel(x: number, y: number): boolean` que compruebe si las coordenadas son parcelas del sistema (reutilizable en backend y frontend)
 
-### 15.3 Diseño y layout de la ciudad inicial
+### 15.3 Diseño y layout de la ciudad inicial ✅
 
 - Crear archivo `src/seed/seedCity.ts` con la función `seedCity()` que coloque los edificios de la ciudad
 - La ciudad ocupa 4 parcelas = cuadrícula de 200×200 unidades de mundo (cada parcela es 100×100 con celdas de 0-99 en `localX`/`localY`)
@@ -701,7 +701,7 @@ Backlog de tareas ordenado por prioridad. Cada tarea es lo suficientemente concr
 - Cada `placed_object` se inserta con: `parcelId` (de la parcela correspondiente), `objectId` (del catálogo), `localX`, `localY` (posición dentro de la parcela, respetando los `sizeX`/`sizeY` para que no se solapen)
 - Añadir llamada a `seedCity()` desde `runAllSeeds()` después de `seedCatalog()` (necesita que el catálogo y las parcelas existan)
 
-### 15.4 Visualización especial en el frontend
+### 15.4 Visualización especial en el frontend ✅
 
 - En `ParcelManager.createParcelMeshes()`: detectar si `parcel.ownerId === SYSTEM_PLAYER_ID` como un nuevo estado (además de `isOwn`, `isOther`, `purchasable`)
 - **Suelo**: color dorado/ámbar (#8a7a35) diferenciado de los otros estados, con brillo ligeramente mayor
@@ -711,14 +711,14 @@ Backlog de tareas ordenado por prioridad. Cada tarea es lo suficientemente concr
 - En el minimapa (cuando se implemente Fase 14): las parcelas sistema se pintan en dorado (#d4a837)
 - Las decoraciones de bioma NO se generan sobre parcelas del sistema (ya tienen edificios predefinidos)
 
-### 15.5 Spawn inicial y cámara en la ciudad
+### 15.5 Spawn inicial y cámara en la ciudad ✅
 
 - Al entrar al mundo por primera vez (botón "Acceder al Mundo"), la cámara empieza centrada en la ciudad: `camera.target` apunta al centro de las 4 parcelas `(worldX=100, worldZ=100)` en vez de `(50, 0, 50)`
 - Si el jugador tiene parcelas propias y entra desde "Mis Parcelas", la cámara va a su parcela seleccionada (comportamiento actual)
 - Si el jugador tiene parcelas pero entra desde "Acceder al Mundo", centrar en la ciudad igualmente (punto de referencia universal)
 - Añadir botón rápido en el HUD (icono de casa/brújula) que lleve la cámara de vuelta a la ciudad central con animación suave
 
-### 15.6 Tamaño de parcelas, hacerlas de 200x200
+### 15.6 Tamaño de parcelas, hacerlas de 200x200 ✅
 
 - Cambiar el tamaño de parcelas a 200x200
 - Todas las parcelas deben tener el mismo precio no importa la posicion

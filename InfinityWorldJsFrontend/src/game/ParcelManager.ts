@@ -10,7 +10,7 @@ import type { Mesh } from '@babylonjs/core/Meshes/mesh'
 import type { LinesMesh } from '@babylonjs/core/Meshes/linesMesh'
 import { Animation } from '@babylonjs/core/Animations/animation'
 import type { Parcel } from '../types'
-import { WORLD_CONFIG, chebyshevDistance, MAX_BUY_DISTANCE, calculateParcelPrice } from '../config/world'
+import { WORLD_CONFIG, chebyshevDistance, MAX_BUY_DISTANCE, PARCEL_PRICE } from '../config/world'
 import { getBiome, type BiomeType } from './BiomeGenerator'
 import { generateDecorations } from './BiomeDecorator'
 import { Building, findBuildingTypeByName } from './Building'
@@ -65,7 +65,12 @@ function blendBiomeColor(biome: BiomeType, px: number, py: number): { r: number;
  * Compute the ground color for a parcel based on its biome, neighbors, and ownership.
  * Uses blended biome colors for smooth transitions at biome borders.
  */
-function computeGroundColor(biome: BiomeType, px: number, py: number, isOwn: boolean, isOther: boolean, purchasable: boolean): Color3 {
+function computeGroundColor(biome: BiomeType, px: number, py: number, isOwn: boolean, isOther: boolean, purchasable: boolean, isSystem: boolean): Color3 {
+  if (isSystem) {
+    // Golden/amber ground for system parcels
+    return new Color3(0.54, 0.48, 0.21) // #8a7a35
+  }
+
   const base = blendBiomeColor(biome, px, py)
   let r = base.r, g = base.g, b = base.b
 
@@ -92,7 +97,7 @@ function computeGroundColor(biome: BiomeType, px: number, py: number, isOwn: boo
   return new Color3(Math.min(r, 1), Math.min(g, 1), Math.min(b, 1))
 }
 
-interface LoadedParcel {
+export interface LoadedParcel {
   parcel: Parcel
   ground: Mesh
   border: LinesMesh
@@ -289,9 +294,10 @@ export class ParcelManager {
 
   /** Shared mesh creation for both local and server parcels */
   private createParcelMeshes(key: string, parcel: Parcel, lowDetail: boolean = false): void {
-    const isOwn = !!parcel.ownerId && this.isOwnParcel(parcel.ownerId)
-    const isOther = !!parcel.ownerId && !isOwn
-    const purchasable = !parcel.ownerId && this.isPurchasable(parcel.x, parcel.y)
+    const isSystem = parcel.ownerId === WORLD_CONFIG.SYSTEM_PLAYER_ID
+    const isOwn = !isSystem && !!parcel.ownerId && this.isOwnParcel(parcel.ownerId)
+    const isOther = !isSystem && !!parcel.ownerId && !isOwn
+    const purchasable = !parcel.ownerId && !isSystem && this.isPurchasable(parcel.x, parcel.y)
 
     const worldCoords = this.parcelToWorldCoords(parcel.x, parcel.y)
     const size = WORLD_CONFIG.PARCEL_SIZE
@@ -308,13 +314,17 @@ export class ParcelManager {
     const biome = getBiome(parcel.x, parcel.y)
 
     const material = new StandardMaterial(`parcel_material_${key}`, this.scene)
-    material.diffuseColor = computeGroundColor(biome, parcel.x, parcel.y, isOwn, isOther, purchasable)
-    material.specularColor = new Color3(0.1, 0.1, 0.1)
+    material.diffuseColor = computeGroundColor(biome, parcel.x, parcel.y, isOwn, isOther, purchasable, isSystem)
+    if (isSystem) {
+      material.specularColor = new Color3(0.2, 0.18, 0.08)
+    } else {
+      material.specularColor = new Color3(0.1, 0.1, 0.1)
+    }
     ground.material = material
     ground.isPickable = !lowDetail
 
     // Border
-    const border = this.createParcelBorder(parcel.x, parcel.y, key, isOwn, purchasable, isOther)
+    const border = this.createParcelBorder(parcel.x, parcel.y, key, isOwn, purchasable, isOther, isSystem)
 
     // In LOD mode: skip icons, labels, and decorations
     let editIcon: Mesh | null = null
@@ -324,7 +334,10 @@ export class ParcelManager {
     let decorations: Mesh[] = []
 
     if (!lowDetail) {
-      if (isOwn) {
+      if (isSystem) {
+        // System parcels: "Infinity World" label, no icons
+        ownerLabel = this.createOwnerLabel(parcel.x, parcel.y, key, parcel.ownerId!)
+      } else if (isOwn) {
         editIcon = this.createEditIcon(parcel.x, parcel.y, key, parcel)
       } else if (isOther) {
         ownerLabel = this.createOwnerLabel(parcel.x, parcel.y, key, parcel.ownerId!)
@@ -333,8 +346,8 @@ export class ParcelManager {
         priceLabel = this.createPriceLabel(parcel.x, parcel.y, key)
       }
 
-      // Biome decorations (only on unowned parcels)
-      if (!parcel.ownerId) {
+      // Biome decorations (only on unowned non-system parcels)
+      if (!parcel.ownerId && !isSystem) {
         const neighbors = getNeighborBiomes(parcel.x, parcel.y)
         decorations = generateDecorations(this.scene, parcel.x, parcel.y, biome, neighbors)
       }
@@ -416,7 +429,7 @@ export class ParcelManager {
   private createPriceLabel(parcelX: number, parcelY: number, key: string): Mesh {
     const worldCoords = this.parcelToWorldCoords(parcelX, parcelY)
     const size = WORLD_CONFIG.PARCEL_SIZE
-    const price = calculateParcelPrice(parcelX, parcelY)
+    const price = PARCEL_PRICE
 
     const plane = MeshBuilder.CreatePlane(
       `parcel_price_${key}`,
@@ -493,7 +506,8 @@ export class ParcelManager {
     key: string,
     isOwn: boolean,
     purchasable: boolean,
-    isOther: boolean = false
+    isOther: boolean = false,
+    isSystem: boolean = false
   ): LinesMesh {
     const worldCoords = this.parcelToWorldCoords(parcelX, parcelY)
     const size = WORLD_CONFIG.PARCEL_SIZE
@@ -515,7 +529,9 @@ export class ParcelManager {
 
     // Ownership determines base border color
     let borderColor: Color3
-    if (isOwn) {
+    if (isSystem) {
+      borderColor = new Color3(0.83, 0.66, 0.22) // Golden: #d4a837
+    } else if (isOwn) {
       borderColor = new Color3(1, 0.3, 0.3)     // Red: own parcel
     } else if (isOther) {
       borderColor = new Color3(0.9, 0.6, 0.2)   // Orange: other player
@@ -525,14 +541,19 @@ export class ParcelManager {
       borderColor = new Color3(0.3, 0.3, 0.3)   // Dark gray: out of range
     }
 
-    // Subtle biome tint on the border (30% biome, 70% ownership)
-    const biome = getBiome(parcelX, parcelY)
-    const bc = BIOME_COLORS[biome]
-    border.color = new Color3(
-      borderColor.r * 0.7 + bc.r * 0.3,
-      borderColor.g * 0.7 + bc.g * 0.3,
-      borderColor.b * 0.7 + bc.b * 0.3
-    )
+    if (isSystem) {
+      // No biome tint for system parcels — pure golden
+      border.color = borderColor
+    } else {
+      // Subtle biome tint on the border (30% biome, 70% ownership)
+      const biome = getBiome(parcelX, parcelY)
+      const bc = BIOME_COLORS[biome]
+      border.color = new Color3(
+        borderColor.r * 0.7 + bc.r * 0.3,
+        borderColor.g * 0.7 + bc.g * 0.3,
+        borderColor.b * 0.7 + bc.b * 0.3
+      )
+    }
 
     return border
   }
@@ -541,6 +562,7 @@ export class ParcelManager {
   private createOwnerLabel(parcelX: number, parcelY: number, key: string, ownerId: string): Mesh {
     const worldCoords = this.parcelToWorldCoords(parcelX, parcelY)
     const size = WORLD_CONFIG.PARCEL_SIZE
+    const isSystem = ownerId === WORLD_CONFIG.SYSTEM_PLAYER_ID
 
     const labelPlane = MeshBuilder.CreatePlane(
       `parcel_owner_label_${key}`,
@@ -555,15 +577,29 @@ export class ParcelManager {
     const texture = new DynamicTexture(`label_tex_${key}`, { width: 256, height: 64 }, this.scene)
     const ctx = texture.getContext() as unknown as CanvasRenderingContext2D
     ctx.clearRect(0, 0, 256, 64)
-    ctx.fillStyle = 'rgba(0,0,0,0.5)'
-    ctx.beginPath()
-    ctx.roundRect(4, 4, 248, 56, 8)
-    ctx.fill()
-    ctx.font = 'bold 24px Arial'
-    ctx.fillStyle = '#ffffff'
-    ctx.textAlign = 'center'
-    ctx.textBaseline = 'middle'
-    ctx.fillText(ownerId.slice(0, 16), 128, 32)
+
+    if (isSystem) {
+      // Golden background for system parcels
+      ctx.fillStyle = 'rgba(40, 30, 5, 0.7)'
+      ctx.beginPath()
+      ctx.roundRect(4, 4, 248, 56, 8)
+      ctx.fill()
+      ctx.font = 'bold 22px Arial'
+      ctx.fillStyle = '#FFD700'
+      ctx.textAlign = 'center'
+      ctx.textBaseline = 'middle'
+      ctx.fillText(WORLD_CONFIG.SYSTEM_PLAYER_NAME + ' World', 128, 32)
+    } else {
+      ctx.fillStyle = 'rgba(0,0,0,0.5)'
+      ctx.beginPath()
+      ctx.roundRect(4, 4, 248, 56, 8)
+      ctx.fill()
+      ctx.font = 'bold 24px Arial'
+      ctx.fillStyle = '#ffffff'
+      ctx.textAlign = 'center'
+      ctx.textBaseline = 'middle'
+      ctx.fillText(ownerId.slice(0, 16), 128, 32)
+    }
     texture.update()
 
     const mat = new StandardMaterial(`label_mat_${key}`, this.scene)
@@ -623,6 +659,10 @@ export class ParcelManager {
 
   getLoadedParcelsCount(): number {
     return this.loadedParcels.size
+  }
+
+  getLoadedParcels(): Map<string, LoadedParcel> {
+    return this.loadedParcels
   }
 
   markParcelAsOwned(x: number, y: number, ownerId: string): void {
@@ -699,33 +739,36 @@ export class ParcelManager {
   /** Refresh visuals for a parcel (after ownership change) */
   private refreshParcelVisuals(key: string, loaded: LoadedParcel): void {
     const parcel = loaded.parcel
-    const isOwn = !!parcel.ownerId && this.isOwnParcel(parcel.ownerId)
-    const isOther = !!parcel.ownerId && !isOwn
-    const purchasable = !parcel.ownerId && this.isPurchasable(parcel.x, parcel.y)
+    const isSystem = parcel.ownerId === WORLD_CONFIG.SYSTEM_PLAYER_ID
+    const isOwn = !isSystem && !!parcel.ownerId && this.isOwnParcel(parcel.ownerId)
+    const isOther = !isSystem && !!parcel.ownerId && !isOwn
+    const purchasable = !parcel.ownerId && !isSystem && this.isPurchasable(parcel.x, parcel.y)
 
     // Update ground color based on biome + ownership
     const biome = getBiome(parcel.x, parcel.y)
     const material = loaded.ground.material as StandardMaterial
-    material.diffuseColor = computeGroundColor(biome, parcel.x, parcel.y, isOwn, isOther, purchasable)
+    material.diffuseColor = computeGroundColor(biome, parcel.x, parcel.y, isOwn, isOther, purchasable, isSystem)
 
     // Update border
     loaded.border.dispose()
-    loaded.border = this.createParcelBorder(parcel.x, parcel.y, key, isOwn, purchasable, isOther)
+    loaded.border = this.createParcelBorder(parcel.x, parcel.y, key, isOwn, purchasable, isOther, isSystem)
 
     // Update icons and labels
     if (loaded.editIcon) { loaded.editIcon.dispose(); loaded.editIcon = null }
     if (loaded.buyIcon) { loaded.buyIcon.dispose(); loaded.buyIcon = null }
     if (loaded.ownerLabel) { loaded.ownerLabel.dispose(); loaded.ownerLabel = null }
     if (loaded.priceLabel) { loaded.priceLabel.dispose(); loaded.priceLabel = null }
-    // Update decorations: remove when owned or in LOD mode, add back if unowned + full detail
+    // Update decorations: remove when owned/system or in LOD mode
     for (const deco of loaded.decorations) deco.dispose()
-    if (!loaded.lowDetail && !parcel.ownerId) {
+    if (!loaded.lowDetail && !parcel.ownerId && !isSystem) {
       const neighbors = getNeighborBiomes(parcel.x, parcel.y)
       loaded.decorations = generateDecorations(this.scene, parcel.x, parcel.y, biome, neighbors)
     } else {
       loaded.decorations = []
     }
-    if (isOwn) {
+    if (isSystem) {
+      loaded.ownerLabel = this.createOwnerLabel(parcel.x, parcel.y, key, parcel.ownerId!)
+    } else if (isOwn) {
       loaded.editIcon = this.createEditIcon(parcel.x, parcel.y, key, parcel)
     } else if (isOther) {
       loaded.ownerLabel = this.createOwnerLabel(parcel.x, parcel.y, key, parcel.ownerId!)

@@ -9,10 +9,11 @@ import { withTransaction } from "../db";
 import { logEconomyEvent } from "../services/economyLog";
 import { WORLD_CONFIG } from "../config/world";
 import {
-  calculateParcelPrice,
+  PARCEL_PRICE,
   chebyshevDistance,
   MAX_BUY_DISTANCE,
 } from "../config/parcels";
+import { isSystemParcel } from "../config/system";
 
 const parcelsQuerySchema = z.object({
   x: z.coerce.number().int().min(-1000000).max(1000000).default(0),
@@ -54,10 +55,10 @@ export function parcelRoutes(repos: Repositories): Router {
   });
 
   // GET /parcels/price?x=0&y=0
-  // Precio dinámico de una parcela por coordenadas
+  // Precio fijo de una parcela
   router.get("/price", validate(priceQuerySchema, "query"), (req, res) => {
     const { x, y } = req.query as unknown as z.infer<typeof priceQuerySchema>;
-    res.json({ x, y, price: calculateParcelPrice(x, y) });
+    res.json({ x, y, price: PARCEL_PRICE });
   });
 
   // GET /parcels/available?playerId=X
@@ -113,7 +114,7 @@ export function parcelRoutes(repos: Repositories): Router {
             available.push({
               x: px,
               y: py,
-              price: calculateParcelPrice(px, py),
+              price: PARCEL_PRICE,
               dist,
             });
           }
@@ -140,7 +141,13 @@ export function parcelRoutes(repos: Repositories): Router {
     try {
       const playerId = req.playerId!;
       const { x, y } = req.body;
-      const price = calculateParcelPrice(x, y);
+
+      // Block system parcels from purchase
+      if (isSystemParcel(x, y)) {
+        throw new AppError(403, "System parcels cannot be purchased");
+      }
+
+      const price = PARCEL_PRICE;
 
       const result = await withTransaction(async (client) => {
         // Lock player row to prevent race conditions
