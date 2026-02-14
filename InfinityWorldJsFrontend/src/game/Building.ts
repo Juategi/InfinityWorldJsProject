@@ -999,6 +999,17 @@ export const BUILDING_TYPES: Record<string, BuildingType> = {
   }
 }
 
+/** Reverse lookup: object name (from catalog) → BuildingType */
+const NAME_TO_TYPE = new Map<string, BuildingType>()
+for (const bt of Object.values(BUILDING_TYPES)) {
+  NAME_TO_TYPE.set(bt.name, bt)
+}
+
+/** Find a BuildingType by catalog name (e.g. "Casa de madera") */
+export function findBuildingTypeByName(name: string): BuildingType | undefined {
+  return NAME_TO_TYPE.get(name)
+}
+
 export class Building {
   public id: string
   public type: BuildingType

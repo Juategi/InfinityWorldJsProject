@@ -1,7 +1,8 @@
 export const WORLD_CONFIG = {
   PARCEL_SIZE: 100,
-  LOAD_RADIUS: 2,      // Parcelas a cargar alrededor del jugador
-  UNLOAD_RADIUS: 3,    // Parcelas a descargar cuando están más lejos
+  DETAIL_RADIUS: 2,    // Full detail: decorations, icons, labels
+  LOAD_RADIUS: 4,      // LOD zone: ground + border only, no decorations
+  UNLOAD_RADIUS: 5,    // Beyond this, parcels are unloaded
 }
 
 /** Distancia máxima (Chebyshev) a la que un jugador puede comprar una parcela */

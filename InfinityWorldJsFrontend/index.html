@@ -15,7 +15,7 @@
       <div class="menu-content">
         <div class="menu-header">
           <h1 class="menu-title">Infinity<span>World</span></h1>
-          <p class="menu-subtitle">Build your world</p>
+          <p class="menu-subtitle" data-i18n="menu.subtitle">Build your world</p>
         </div>
         <div class="menu-coins" id="menu-coins">
           <div class="resource-icon coin-icon"></div>
@@ -26,25 +26,31 @@
             <svg viewBox="0 0 24 24" fill="currentColor">
               <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
             </svg>
-            Acceder al Mundo
+            <span data-i18n="menu.play">Acceder al Mundo</span>
           </button>
           <button class="menu-btn menu-btn-secondary" id="btn-my-parcels">
             <svg viewBox="0 0 24 24" fill="currentColor">
               <path d="M1 11v10h5v-6h4v6h5V11L8 4z M10 3v1.97l7 5V11h2v2h-2v2h2v2h-2v4h6V3H10zm9 6h-2V7h2v2z"/>
             </svg>
-            Mis Parcelas
+            <span data-i18n="menu.parcels">Mis Parcelas</span>
           </button>
           <button class="menu-btn menu-btn-secondary" id="btn-menu-shop">
             <svg viewBox="0 0 24 24" fill="currentColor">
               <path d="M7 18c-1.1 0-1.99.9-1.99 2S5.9 22 7 22s2-.9 2-2-.9-2-2-2zM1 2v2h2l3.6 7.59-1.35 2.45c-.16.28-.25.61-.25.96 0 1.1.9 2 2 2h12v-2H7.42c-.14 0-.25-.11-.25-.25l.03-.12.9-1.63h7.45c.75 0 1.41-.41 1.75-1.03l3.58-6.49c.08-.14.12-.31.12-.48 0-.55-.45-1-1-1H5.21l-.94-2H1zm16 16c-1.1 0-1.99.9-1.99 2s.89 2 1.99 2 2-.9 2-2-.9-2-2-2z"/>
             </svg>
-            Tienda
+            <span data-i18n="menu.shop">Tienda</span>
+          </button>
+          <button class="menu-btn menu-btn-secondary" id="btn-menu-profile">
+            <svg viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+            </svg>
+            <span data-i18n="menu.profile">Perfil</span>
           </button>
           <button class="menu-btn menu-btn-secondary" id="btn-menu-settings">
             <svg viewBox="0 0 24 24" fill="currentColor">
               <path d="M19.14 12.94c.04-.31.06-.63.06-.94 0-.31-.02-.63-.06-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.04.31-.06.63-.06.94s.02.63.06.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/>
             </svg>
-            Ajustes
+            <span data-i18n="menu.settings">Ajustes</span>
           </button>
         </div>
         <div class="menu-footer">
@@ -63,7 +69,7 @@
               <path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/>
             </svg>
           </button>
-          <h2 class="screen-title">Mis Parcelas</h2>
+          <h2 class="screen-title" data-i18n="parcels.title">Mis Parcelas</h2>
         </div>
         <div class="screen-body">
           <!-- Estado vacío -->
@@ -73,13 +79,13 @@
                 <path d="M1 11v10h5v-6h4v6h5V11L8 4z M10 3v1.97l7 5V11h2v2h-2v2h2v2h-2v4h6V3H10zm9 6h-2V7h2v2z"/>
               </svg>
             </div>
-            <p class="parcels-empty-text">No tienes parcelas</p>
-            <p class="parcels-empty-sub">Compra tu primera parcela en la Tienda para empezar a construir</p>
+            <p class="parcels-empty-text" data-i18n="parcels.empty">No tienes parcelas</p>
+            <p class="parcels-empty-sub" data-i18n="parcels.emptyHint">Compra tu primera parcela en la Tienda para empezar a construir</p>
             <button class="menu-btn menu-btn-primary parcels-empty-btn" id="btn-parcels-to-shop">
               <svg viewBox="0 0 24 24" fill="currentColor">
                 <path d="M7 18c-1.1 0-1.99.9-1.99 2S5.9 22 7 22s2-.9 2-2-.9-2-2-2zM1 2v2h2l3.6 7.59-1.35 2.45c-.16.28-.25.61-.25.96 0 1.1.9 2 2 2h12v-2H7.42c-.14 0-.25-.11-.25-.25l.03-.12.9-1.63h7.45c.75 0 1.41-.41 1.75-1.03l3.58-6.49c.08-.14.12-.31.12-.48 0-.55-.45-1-1-1H5.21l-.94-2H1zm16 16c-1.1 0-1.99.9-1.99 2s.89 2 1.99 2 2-.9 2-2-.9-2-2-2z"/>
               </svg>
-              Ir a la Tienda
+              <span data-i18n="parcels.goToShop">Ir a la Tienda</span>
             </button>
           </div>
           <!-- Lista de parcelas (se llena dinámicamente) -->
@@ -98,22 +104,22 @@
               <path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/>
             </svg>
           </button>
-          <h2 class="screen-title">Ajustes</h2>
+          <h2 class="screen-title" data-i18n="settings.title">Ajustes</h2>
         </div>
         <div class="screen-body">
           <div class="settings-sections">
             <!-- Sonido -->
             <div class="settings-section">
-              <h3 class="settings-section-title">Sonido</h3>
+              <h3 class="settings-section-title" data-i18n="settings.sound">Sonido</h3>
               <div class="settings-row">
-                <span class="settings-label">Musica</span>
+                <span class="settings-label" data-i18n="settings.music">Musica</span>
                 <label class="toggle">
                   <input type="checkbox" id="toggle-music" checked>
                   <span class="toggle-slider"></span>
                 </label>
               </div>
               <div class="settings-row">
-                <span class="settings-label">Efectos de sonido</span>
+                <span class="settings-label" data-i18n="settings.sfx">Efectos de sonido</span>
                 <label class="toggle">
                   <input type="checkbox" id="toggle-sfx" checked>
                   <span class="toggle-slider"></span>
@@ -122,27 +128,77 @@
             </div>
             <!-- Gráficos -->
             <div class="settings-section">
-              <h3 class="settings-section-title">Graficos</h3>
+              <h3 class="settings-section-title" data-i18n="settings.graphics">Graficos</h3>
               <div class="settings-row">
-                <span class="settings-label">Calidad</span>
-                <span class="settings-value">Media</span>
+                <span class="settings-label" data-i18n="settings.quality">Calidad</span>
+                <select id="select-quality" class="settings-select">
+                  <option value="low" data-i18n="settings.quality.low">Baja</option>
+                  <option value="medium" selected data-i18n="settings.quality.medium">Media</option>
+                  <option value="high" data-i18n="settings.quality.high">Alta</option>
+                </select>
               </div>
+            </div>
+            <!-- Idioma -->
+            <div class="settings-section">
+              <h3 class="settings-section-title" data-i18n="settings.language">Idioma</h3>
               <div class="settings-row">
-                <span class="settings-label">Sombras</span>
-                <label class="toggle">
-                  <input type="checkbox" id="toggle-shadows" checked>
-                  <span class="toggle-slider"></span>
-                </label>
+                <span class="settings-label" data-i18n="settings.language">Idioma</span>
+                <select id="select-language" class="settings-select">
+                  <!-- Options populated dynamically -->
+                </select>
               </div>
             </div>
             <!-- Cuenta -->
             <div class="settings-section">
-              <h3 class="settings-section-title">Cuenta</h3>
+              <h3 class="settings-section-title" data-i18n="settings.account">Cuenta</h3>
               <div class="settings-row">
-                <span class="settings-label">Jugador</span>
+                <span class="settings-label" data-i18n="settings.player">Jugador</span>
                 <span class="settings-value">Player1</span>
               </div>
-              <button class="settings-btn-logout" id="btn-logout">Cerrar sesion</button>
+              <button class="settings-btn-logout" id="btn-logout" data-i18n="settings.logout">Cerrar sesion</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Pantalla Perfil -->
+    <div id="profile-screen" class="screen" style="display: none;">
+      <div class="menu-bg"></div>
+      <div class="screen-container">
+        <div class="screen-header">
+          <button class="screen-back-btn" id="btn-profile-back">
+            <svg viewBox="0 0 24 24" fill="currentColor">
+              <path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/>
+            </svg>
+          </button>
+          <h2 class="screen-title" data-i18n="profile.title">Perfil</h2>
+        </div>
+        <div class="screen-body">
+          <div class="profile-card">
+            <div class="profile-avatar">
+              <svg viewBox="0 0 24 24" fill="currentColor" width="48" height="48">
+                <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+              </svg>
+            </div>
+            <div class="profile-name" id="profile-name">Player1</div>
+          </div>
+          <div class="profile-stats">
+            <div class="profile-stat">
+              <div class="profile-stat-value" id="profile-coins">500</div>
+              <div class="profile-stat-label" data-i18n="profile.coins">Monedas</div>
+            </div>
+            <div class="profile-stat">
+              <div class="profile-stat-value" id="profile-parcels">0</div>
+              <div class="profile-stat-label" data-i18n="profile.parcels">Parcelas</div>
+            </div>
+            <div class="profile-stat">
+              <div class="profile-stat-value" id="profile-buildings">0</div>
+              <div class="profile-stat-label" data-i18n="profile.buildings">Edificios</div>
+            </div>
+            <div class="profile-stat">
+              <div class="profile-stat-value" id="profile-unlocked">0</div>
+              <div class="profile-stat-label" data-i18n="profile.unlocked">Objetos</div>
             </div>
           </div>
         </div>
@@ -159,7 +215,7 @@
               <path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/>
             </svg>
           </button>
-          <h2 class="screen-title">Tienda</h2>
+          <h2 class="screen-title" data-i18n="shop.title">Tienda</h2>
           <div class="shop-coins">
             <div class="resource-icon coin-icon"></div>
             <span class="shop-coins-value">500</span>
@@ -168,28 +224,28 @@
 
         <!-- Tabs de sección: Objetos / Parcelas -->
         <div class="shop-section-tabs">
-          <button class="shop-section-tab active" data-shop-section="objects">Objetos</button>
-          <button class="shop-section-tab" data-shop-section="parcels">Parcelas</button>
+          <button class="shop-section-tab active" data-shop-section="objects" data-i18n="shop.objects">Objetos</button>
+          <button class="shop-section-tab" data-shop-section="parcels" data-i18n="shop.parcels">Parcelas</button>
         </div>
 
         <!-- Sección: Objetos -->
         <div id="shop-objects-section" class="shop-section">
           <!-- Filtros por época -->
           <div class="shop-era-tabs">
-            <button class="shop-era-tab active" data-era="all">Todas</button>
-            <button class="shop-era-tab" data-era="medieval">Medieval</button>
-            <button class="shop-era-tab" data-era="colonial">Colonial</button>
-            <button class="shop-era-tab" data-era="industrial">Industrial</button>
-            <button class="shop-era-tab" data-era="moderno">Moderna</button>
-            <button class="shop-era-tab" data-era="futurista">Futurista</button>
+            <button class="shop-era-tab active" data-era="all" data-i18n="shop.era.all">Todas</button>
+            <button class="shop-era-tab" data-era="medieval" data-i18n="shop.era.medieval">Medieval</button>
+            <button class="shop-era-tab" data-era="colonial" data-i18n="shop.era.colonial">Colonial</button>
+            <button class="shop-era-tab" data-era="industrial" data-i18n="shop.era.industrial">Industrial</button>
+            <button class="shop-era-tab" data-era="moderno" data-i18n="shop.era.moderno">Moderna</button>
+            <button class="shop-era-tab" data-era="futurista" data-i18n="shop.era.futurista">Futurista</button>
           </div>
 
           <!-- Sub-filtros por categoría -->
           <div class="shop-category-filters">
-            <button class="shop-cat-filter active" data-cat="all">Todo</button>
-            <button class="shop-cat-filter" data-cat="buildings">Edificios</button>
-            <button class="shop-cat-filter" data-cat="decor">Decoracion</button>
-            <button class="shop-cat-filter" data-cat="nature">Naturaleza</button>
+            <button class="shop-cat-filter active" data-cat="all" data-i18n="shop.cat.all">Todo</button>
+            <button class="shop-cat-filter" data-cat="buildings" data-i18n="shop.cat.buildings">Edificios</button>
+            <button class="shop-cat-filter" data-cat="decor" data-i18n="shop.cat.decor">Decoracion</button>
+            <button class="shop-cat-filter" data-cat="nature" data-i18n="shop.cat.nature">Naturaleza</button>
           </div>
 
           <!-- Grid de objetos -->
@@ -201,7 +257,7 @@
         <!-- Sección: Parcelas -->
         <div id="shop-parcels-section" class="shop-section" style="display: none;">
           <div class="shop-parcels-info">
-            <p class="shop-parcels-desc">Compra parcelas para expandir tu territorio. El precio varia segun la distancia al centro del mundo.</p>
+            <p class="shop-parcels-desc" data-i18n="shop.parcelsDesc">Compra parcelas para expandir tu territorio. El precio varia segun la distancia al centro del mundo.</p>
           </div>
           <div id="shop-parcels-grid" class="shop-parcels-grid">
             <!-- Se llena dinámicamente -->
@@ -221,8 +277,8 @@
           <span id="buy-object-price">0</span>
         </div>
         <div class="dialog-buttons">
-          <button class="dialog-btn dialog-btn-cancel" id="btn-buy-object-cancel">Cancelar</button>
-          <button class="dialog-btn dialog-btn-confirm" id="btn-buy-object-confirm">Comprar</button>
+          <button class="dialog-btn dialog-btn-cancel" id="btn-buy-object-cancel" data-i18n="buyParcel.cancel">Cancelar</button>
+          <button class="dialog-btn dialog-btn-confirm" id="btn-buy-object-confirm" data-i18n="shop.buy">Comprar</button>
         </div>
       </div>
     </div>
@@ -262,18 +318,24 @@
 
       <!-- HUD Superior Derecha: Menú, Settings y Shop -->
       <div id="hud-top-right">
-        <div id="connection-indicator" class="connection-indicator disconnected" title="Desconectado">
+        <div id="connection-indicator" class="connection-indicator disconnected" data-i18n-title="connection.offline">
           <span class="connection-dot"></span>
           <span class="connection-label">Offline</span>
         </div>
+        <button class="icon-btn" id="btn-players" data-i18n-title="hud.players">
+          <svg viewBox="0 0 24 24" fill="currentColor">
+            <path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/>
+          </svg>
+          <span class="players-count-badge" id="players-count-badge" style="display:none">0</span>
+        </button>
         <div class="notif-bell-wrapper">
-          <button class="icon-btn" id="btn-notifications" title="Notificaciones">
+          <button class="icon-btn" id="btn-notifications" data-i18n-title="hud.notifications">
             <svg viewBox="0 0 24 24" fill="currentColor">
               <path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.63-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.64 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/>
             </svg>
           </button>
         </div>
-        <button class="icon-btn" id="btn-back-menu" title="Volver al menu">
+        <button class="icon-btn" id="btn-back-menu" data-i18n-title="hud.backMenu">
           <svg viewBox="0 0 24 24" fill="currentColor">
             <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/>
           </svg>
@@ -298,19 +360,19 @@
             <svg viewBox="0 0 24 24" fill="currentColor" class="tab-icon">
               <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/>
             </svg>
-            <span>Buildings</span>
+            <span data-i18n="build.buildings">Buildings</span>
           </button>
           <button class="build-tab" data-category="nature">
             <svg viewBox="0 0 24 24" fill="currentColor" class="tab-icon">
               <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
             </svg>
-            <span>Nature</span>
+            <span data-i18n="build.nature">Nature</span>
           </button>
           <button class="build-tab" data-category="decor">
             <svg viewBox="0 0 24 24" fill="currentColor" class="tab-icon">
               <path d="M12 7V3H2v18h20V7H12zM6 19H4v-2h2v2zm0-4H4v-2h2v2zm0-4H4V9h2v2zm0-4H4V5h2v2zm4 12H8v-2h2v2zm0-4H8v-2h2v2zm0-4H8V9h2v2zm0-4H8V5h2v2zm10 12h-8v-2h2v-2h-2v-2h2v-2h-2V9h8v10zm-2-8h-2v2h2v-2zm0 4h-2v2h2v-2z"/>
             </svg>
-            <span>Decor</span>
+            <span data-i18n="build.decor">Decor</span>
           </button>
         </div>
 
@@ -324,22 +386,22 @@
 
       <!-- Herramientas de Edición (Derecha) -->
       <div id="edit-tools">
-        <button class="edit-tool-btn" id="btn-move" title="Move">
+        <button class="edit-tool-btn" id="btn-move" data-i18n-title="edit.move">
           <svg viewBox="0 0 24 24" fill="currentColor">
             <path d="M10 9h4V6h3l-5-5-5 5h3v3zm-1 1H6V7l-5 5 5 5v-3h3v-4zm14 2l-5-5v3h-3v4h3v3l5-5zm-9 3h-4v3H7l5 5 5-5h-3v-3z"/>
           </svg>
         </button>
-        <button class="edit-tool-btn" id="btn-rotate" title="Rotate">
+        <button class="edit-tool-btn" id="btn-rotate" data-i18n-title="edit.rotate">
           <svg viewBox="0 0 24 24" fill="currentColor">
             <path d="M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z"/>
           </svg>
         </button>
-        <button class="edit-tool-btn" id="btn-info" title="Info">
+        <button class="edit-tool-btn" id="btn-info" data-i18n-title="edit.info">
           <svg viewBox="0 0 24 24" fill="currentColor">
             <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/>
           </svg>
         </button>
-        <button class="edit-tool-btn danger" id="btn-delete" title="Delete">
+        <button class="edit-tool-btn danger" id="btn-delete" data-i18n-title="edit.delete">
           <svg viewBox="0 0 24 24" fill="currentColor">
             <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
           </svg>
@@ -353,12 +415,23 @@
         </svg>
       </button>
 
+      <!-- Panel de jugadores online -->
+      <div id="players-panel" class="players-panel" style="display: none;">
+        <div class="players-panel-header">
+          <span data-i18n="players.title">Jugadores Online</span>
+          <button class="players-panel-close" id="btn-players-close">&times;</button>
+        </div>
+        <div id="players-list" class="players-list">
+          <!-- Populated dynamically -->
+        </div>
+      </div>
+
     </div>
 
     <!-- Diálogo de compra de parcela -->
     <div id="buy-parcel-dialog" class="dialog-overlay" style="display: none;">
       <div class="dialog-box">
-        <h3 class="dialog-title">Comprar Parcela</h3>
+        <h3 class="dialog-title" data-i18n="buyParcel.title">Comprar Parcela</h3>
         <p class="dialog-text">
           Parcela (<span id="buy-parcel-x">0</span>, <span id="buy-parcel-y">0</span>)
         </p>
@@ -367,8 +440,8 @@
           <span id="buy-parcel-price">100</span>
         </div>
         <div class="dialog-buttons">
-          <button class="dialog-btn dialog-btn-cancel" id="btn-buy-parcel-cancel">Cancelar</button>
-          <button class="dialog-btn dialog-btn-confirm" id="btn-buy-parcel-confirm">Comprar</button>
+          <button class="dialog-btn dialog-btn-cancel" id="btn-buy-parcel-cancel" data-i18n="buyParcel.cancel">Cancelar</button>
+          <button class="dialog-btn dialog-btn-confirm" id="btn-buy-parcel-confirm" data-i18n="buyParcel.confirm">Comprar</button>
         </div>
       </div>
     </div>

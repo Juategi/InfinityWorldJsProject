@@ -2,10 +2,14 @@ import { Game } from './game/Game'
 import { UIManager } from './ui/UIManager'
 import { calculateParcelPrice, chebyshevDistance, MAX_BUY_DISTANCE } from './config/world'
 import { BUILDING_TYPES } from './game/Building'
-import { initInventory, isUnlocked, unlockObject } from './game/PlayerInventory'
+import { initInventory, isUnlocked, unlockObject, getUnlockedSet } from './game/PlayerInventory'
 import { networkClient, type ConnectionState } from './network/NetworkClient'
 import { WorldSync } from './network/WorldSync'
 import { notifications } from './ui/NotificationManager'
+import { tutorial } from './ui/TutorialManager'
+import { audio } from './audio/AudioManager'
+import { quality, type QualityLevel } from './config/QualitySettings'
+import { t, getLang, setLang, getSupportedLanguages } from './i18n'
 import type { BuildingType, BuildingCategory, BuildingEra } from './game/Building'
 import type { Parcel } from './types'
 
@@ -28,6 +32,9 @@ const playerParcels: Parcel[] = import.meta.env.DEV
 /** Wrapper: show a notification toast (delegates to NotificationManager) */
 function showToast(message: string, type: 'success' | 'error' | 'info' | 'warning' = 'info') {
   notifications.notify(message, type)
+  // Play corresponding sound
+  if (type === 'error') audio.play('error')
+  else if (type === 'success') audio.play('notification')
 }
 
 function hideScreen(el: HTMLElement): Promise<void> {
@@ -47,23 +54,34 @@ function showScreen(el: HTMLElement) {
   void el.offsetHeight
 }
 
+// --- Traducciones ---
+
+function applyTranslations() {
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    el.textContent = t(el.getAttribute('data-i18n')!)
+  })
+  document.querySelectorAll('[data-i18n-title]').forEach(el => {
+    ;(el as HTMLElement).title = t(el.getAttribute('data-i18n-title')!)
+  })
+}
+
 // --- Conexión ---
 
-const CONNECTION_LABELS: Record<ConnectionState, string> = {
-  disconnected: 'Offline',
-  connecting: 'Conectando...',
-  connected: 'Online',
-  reconnecting: 'Reconectando...',
-  error: 'Error',
+const CONNECTION_KEYS: Record<ConnectionState, string> = {
+  disconnected: 'connection.offline',
+  connecting: 'connection.connecting',
+  connected: 'connection.online',
+  reconnecting: 'connection.reconnecting',
+  error: 'connection.error',
 }
 
 function updateConnectionUI(state: ConnectionState) {
   const el = document.getElementById('connection-indicator')
   if (!el) return
   el.className = `connection-indicator ${state}`
-  el.title = CONNECTION_LABELS[state]
+  el.title = t(CONNECTION_KEYS[state])
   const label = el.querySelector('.connection-label')
-  if (label) label.textContent = CONNECTION_LABELS[state]
+  if (label) label.textContent = t(CONNECTION_KEYS[state])
 }
 
 networkClient.onStateChange(updateConnectionUI)
@@ -97,7 +115,7 @@ async function enterWorld() {
   const overlay = document.getElementById('ui-overlay')!
 
   // Ocultar pantalla visible con transición
-  const screens = ['main-menu', 'parcels-screen', 'settings-screen', 'shop-screen']
+  const screens = ['main-menu', 'parcels-screen', 'settings-screen', 'shop-screen', 'profile-screen']
   const visibleScreen = screens
     .map(id => document.getElementById(id)!)
     .find(el => el.style.display !== 'none')
@@ -133,6 +151,14 @@ async function enterWorld() {
 
   game!.run()
 
+  // Start ambient music
+  audio.startMusic()
+
+  // Start tutorial for first-time players
+  if (tutorial.shouldStart()) {
+    tutorial.start()
+  }
+
   // Conectar al servidor si no está conectado
   if (networkClient.state !== 'connected') {
     networkClient.joinWorld('player1').then(room => {
@@ -141,7 +167,7 @@ async function enterWorld() {
       game!.setWorldSync(sync)
     }).catch(err => {
       console.warn('Could not connect to server:', err)
-      showToast('Modo offline - sin conexion al servidor', 'warning')
+      showToast(t('connection.offline'), 'warning')
     })
 
     // Re-create WorldSync on reconnection (new Room instance)
@@ -180,8 +206,8 @@ function renderParcels() {
         </svg>
       </div>
       <div class="parcel-card-info">
-        <div class="parcel-card-name">Parcela (${parcel.x}, ${parcel.y})</div>
-        <div class="parcel-card-coords">Coordenadas: X=${parcel.x}, Y=${parcel.y}</div>
+        <div class="parcel-card-name">${t('buyParcel.parcel')} (${parcel.x}, ${parcel.y})</div>
+        <div class="parcel-card-coords">${t('parcels.coords')}: X=${parcel.x}, Y=${parcel.y}</div>
       </div>
       <svg class="parcel-card-arrow" viewBox="0 0 24 24" fill="currentColor">
         <path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/>
@@ -211,6 +237,25 @@ async function showSettingsScreen() {
 
   await hideScreen(menu)
   showScreen(settingsScreen)
+}
+
+// --- Perfil ---
+
+function updateProfileStats() {
+  document.getElementById('profile-coins')!.textContent = String(getCoins())
+  document.getElementById('profile-parcels')!.textContent = String(playerParcels.length)
+  const buildingCount = game ? game.getBuildingManager().getBuildingCount() : 0
+  document.getElementById('profile-buildings')!.textContent = String(buildingCount)
+  document.getElementById('profile-unlocked')!.textContent = String(getUnlockedSet().size)
+}
+
+async function showProfileScreen() {
+  const menu = document.getElementById('main-menu')!
+  const profileScreen = document.getElementById('profile-screen')!
+
+  updateProfileStats()
+  await hideScreen(menu)
+  showScreen(profileScreen)
 }
 
 // --- Tienda ---
@@ -278,9 +323,9 @@ function renderShopItems() {
         <span class="shop-item-name">${bt.name}</span>
         <span class="shop-item-meta">${bt.sizeX}x${bt.sizeZ}</span>
         ${owned
-          ? '<div class="shop-item-price free">Desbloqueado</div>'
+          ? `<div class="shop-item-price free">${t('shop.owned')}</div>`
           : isFree
-            ? '<div class="shop-item-price free">Gratis</div>'
+            ? `<div class="shop-item-price free">${t('shop.free')}</div>`
             : `<div class="shop-item-price paid"><div class="cost-icon"></div><span>${bt.cost}</span></div>`
         }
       </div>
@@ -301,7 +346,7 @@ function onShopItemClick(itemId: string) {
   if (!bt) return
 
   if (isUnlocked(bt.id)) {
-    showToast('Ya desbloqueado!', 'info')
+    showToast(t('toast.alreadyOwned'), 'info')
     return
   }
 
@@ -309,7 +354,7 @@ function onShopItemClick(itemId: string) {
     // Gratis: desbloquear directamente
     unlockObject(bt.id)
     renderShopItems()
-    showToast(`${bt.name} desbloqueado!`, 'success')
+    showToast(t('toast.objectBought').replace('{name}', bt.name), 'success')
     return
   }
 
@@ -342,7 +387,7 @@ function confirmBuyObject() {
 
   const cost = pendingBuyObject.cost
   if (getCoins() < cost) {
-    showToast('Monedas insuficientes!', 'error')
+    showToast(t('toast.notEnoughCoins'), 'error')
     hideBuyObjectDialog()
     return
   }
@@ -352,7 +397,8 @@ function confirmBuyObject() {
   }
 
   unlockObject(pendingBuyObject.id)
-  showToast(`${pendingBuyObject.name} desbloqueado!`, 'success')
+  audio.play('buy')
+  showToast(t('toast.objectBought').replace('{name}', pendingBuyObject.name), 'success')
   hideBuyObjectDialog()
   updateShopCoins()
   renderShopItems()
@@ -417,9 +463,9 @@ function renderShopParcels() {
   grid.innerHTML = toShow.map(p => `
     <div class="shop-parcel-card ${p.owned ? 'owned' : ''}" data-px="${p.x}" data-py="${p.y}" data-pprice="${p.price}">
       <div class="shop-parcel-coords">(${p.x}, ${p.y})</div>
-      <div class="shop-parcel-distance">${p.owned ? 'Tu parcela' : `Dist. al centro: ${chebyshevDistance(p.x, p.y, 0, 0)}`}</div>
+      <div class="shop-parcel-distance">${p.owned ? t('shop.yourParcel') : `${t('shop.distCenter')}: ${chebyshevDistance(p.x, p.y, 0, 0)}`}</div>
       ${p.owned
-        ? '<div class="shop-parcel-price" style="color: #66BB6A;">Tuya</div>'
+        ? `<div class="shop-parcel-price" style="color: #66BB6A;">${t('shop.yourParcel')}</div>`
         : `<div class="shop-parcel-price"><div class="cost-icon"></div><span>${p.price}</span></div>`
       }
     </div>
@@ -437,7 +483,7 @@ function renderShopParcels() {
 function onShopParcelClick(x: number, y: number) {
   const price = calculateParcelPrice(x, y)
   if (getCoins() < price) {
-    showToast('Monedas insuficientes!', 'error')
+    showToast(t('toast.notEnoughCoins'), 'error')
     return
   }
 
@@ -481,7 +527,7 @@ function confirmBuyParcel() {
 
   const price = calculateParcelPrice(pendingBuyParcel.x, pendingBuyParcel.y)
   if (game.state.coins < price) {
-    showToast('Monedas insuficientes!', 'error')
+    showToast(t('toast.notEnoughCoins'), 'error')
     hideBuyParcelDialog()
     return
   }
@@ -499,6 +545,7 @@ function confirmBuyParcel() {
 
   // Offline fallback: local only
   game.spendCoins(price)
+  audio.play('buy')
 
   game.getParcelManager().markParcelAsOwned(x, y, 'player1')
 
@@ -509,7 +556,7 @@ function confirmBuyParcel() {
     y,
   })
 
-  showToast(`Parcela (${x}, ${y}) comprada!`, 'success')
+  showToast(t('toast.parcelPurchased').replace('{x}', String(x)).replace('{y}', String(y)), 'success')
   hideBuyParcelDialog()
   updateShopCoins()
   renderShopParcels()
@@ -518,6 +565,27 @@ function confirmBuyParcel() {
 // --- Inicialización ---
 
 document.addEventListener('DOMContentLoaded', () => {
+  // Apply i18n translations to all static elements
+  applyTranslations()
+
+  // Re-apply translations when language changes
+  document.addEventListener('languageChanged', () => {
+    applyTranslations()
+    // Re-render dynamic content
+    if (document.getElementById('shop-screen')!.style.display !== 'none') {
+      renderShopItems()
+      renderShopParcels()
+    }
+  })
+
+  // Global click sound for all menu and icon buttons
+  document.addEventListener('pointerdown', (e) => {
+    const target = e.target as HTMLElement
+    if (target.closest('.menu-btn, .icon-btn, .screen-back-btn, .tutorial-btn')) {
+      audio.play('click')
+    }
+  })
+
   // Botón principal: Acceder al Mundo
   document.getElementById('btn-enter-world')!.addEventListener('pointerdown', () => {
     enterWorld()
@@ -551,6 +619,17 @@ document.addEventListener('DOMContentLoaded', () => {
     showShopScreen('menu')
   })
 
+  // Perfil
+  document.getElementById('btn-menu-profile')!.addEventListener('pointerdown', () => {
+    showProfileScreen()
+  })
+
+  // Botón back de perfil
+  document.getElementById('btn-profile-back')!.addEventListener('pointerdown', () => {
+    const profileScreen = document.getElementById('profile-screen')!
+    hideScreen(profileScreen).then(() => showScreen(document.getElementById('main-menu')!))
+  })
+
   // Ajustes
   document.getElementById('btn-menu-settings')!.addEventListener('pointerdown', () => {
     showSettingsScreen()
@@ -564,8 +643,45 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Botón cerrar sesión (placeholder)
   document.getElementById('btn-logout')!.addEventListener('pointerdown', () => {
-    showToast('Cerrar sesion - Proximamente', 'info')
+    showToast(t('settings.logout'), 'info')
   })
+
+  // Audio settings toggles
+  const toggleMusic = document.getElementById('toggle-music') as HTMLInputElement
+  const toggleSfx = document.getElementById('toggle-sfx') as HTMLInputElement
+  if (toggleMusic) {
+    toggleMusic.checked = audio.isMusicEnabled()
+    toggleMusic.addEventListener('change', () => {
+      audio.setMusicEnabled(toggleMusic.checked)
+    })
+  }
+  if (toggleSfx) {
+    toggleSfx.checked = audio.isSfxEnabled()
+    toggleSfx.addEventListener('change', () => {
+      audio.setSfxEnabled(toggleSfx.checked)
+    })
+  }
+
+  // Quality selector
+  const selectQuality = document.getElementById('select-quality') as HTMLSelectElement
+  if (selectQuality) {
+    selectQuality.value = quality.getLevel()
+    selectQuality.addEventListener('change', () => {
+      quality.setLevel(selectQuality.value as QualityLevel)
+    })
+  }
+
+  // Language selector
+  const selectLanguage = document.getElementById('select-language') as HTMLSelectElement
+  if (selectLanguage) {
+    const languages = getSupportedLanguages()
+    selectLanguage.innerHTML = languages.map(l =>
+      `<option value="${l.code}"${l.code === getLang() ? ' selected' : ''}>${l.name}</option>`
+    ).join('')
+    selectLanguage.addEventListener('change', () => {
+      setLang(selectLanguage.value as ReturnType<typeof getLang>)
+    })
+  }
 
   // Diálogo de compra de parcela
   document.getElementById('btn-buy-parcel-cancel')!.addEventListener('pointerdown', () => {
@@ -605,6 +721,76 @@ document.addEventListener('DOMContentLoaded', () => {
       notifications.toggleHistory()
     })
   }
+
+  // Players panel
+  const playersPanel = document.getElementById('players-panel')!
+  const playersList = document.getElementById('players-list')!
+  const playersCountBadge = document.getElementById('players-count-badge')!
+  let playersPanelOpen = false
+
+  function updatePlayersPanel() {
+    if (!game) return
+    const worldSync = game.getWorldSync()
+    if (!worldSync) {
+      playersList.innerHTML = `<div class="players-empty">${t('players.disconnected')}</div>`
+      playersCountBadge.style.display = 'none'
+      return
+    }
+
+    const players = worldSync.getOnlinePlayers()
+    const localId = game.getParcelManager().getLocalPlayerId()
+
+    playersCountBadge.textContent = String(players.length)
+    playersCountBadge.style.display = players.length > 0 ? 'flex' : 'none'
+
+    if (players.length === 0) {
+      playersList.innerHTML = `<div class="players-empty">${t('players.empty')}</div>`
+      return
+    }
+
+    playersList.innerHTML = players.map(p => {
+      const isYou = p.id === localId
+      const initial = (p.name || '?')[0].toUpperCase()
+      return `<div class="player-item${isYou ? ' player-item-you' : ''}" data-player-id="${p.id}">
+        <div class="player-avatar">${initial}</div>
+        <div class="player-info">
+          <div class="player-name">${p.name || p.id.slice(0, 8)}</div>
+        </div>
+      </div>`
+    }).join('')
+  }
+
+  document.getElementById('btn-players')?.addEventListener('pointerdown', (e) => {
+    e.stopPropagation()
+    playersPanelOpen = !playersPanelOpen
+    playersPanel.style.display = playersPanelOpen ? 'flex' : 'none'
+    if (playersPanelOpen) updatePlayersPanel()
+  })
+
+  document.getElementById('btn-players-close')?.addEventListener('pointerdown', () => {
+    playersPanelOpen = false
+    playersPanel.style.display = 'none'
+  })
+
+  function updatePlayersBadge() {
+    if (!game) return
+    const worldSync = game.getWorldSync()
+    if (worldSync) {
+      const count = worldSync.getOnlinePlayers().length
+      playersCountBadge.textContent = String(count)
+      playersCountBadge.style.display = count > 0 ? 'flex' : 'none'
+    }
+  }
+
+  document.addEventListener('playerJoined', (() => {
+    if (playersPanelOpen) updatePlayersPanel()
+    updatePlayersBadge()
+  }) as EventListener)
+
+  document.addEventListener('playerLeft', (() => {
+    if (playersPanelOpen) updatePlayersPanel()
+    updatePlayersBadge()
+  }) as EventListener)
 
   // Tabs de sección (Objetos / Parcelas)
   document.querySelectorAll('.shop-section-tab').forEach(tab => {
@@ -648,7 +834,7 @@ document.addEventListener('DOMContentLoaded', () => {
   document.addEventListener('parcelBought', ((e: CustomEvent) => {
     const p = e.detail as { id: string; ownerId: string; x: number; y: number }
     playerParcels.push({ id: p.id, ownerId: p.ownerId, x: p.x, y: p.y })
-    showToast(`Parcela (${p.x}, ${p.y}) comprada!`, 'success')
+    showToast(t('toast.parcelPurchased').replace('{x}', String(p.x)).replace('{y}', String(p.y)), 'success')
     updateShopCoins()
     renderShopParcels()
   }) as EventListener)

@@ -232,6 +232,10 @@ export class BuildingManager {
     return this.buildings.get(buildingId)
   }
 
+  getBuildingCount(): number {
+    return this.buildings.size
+  }
+
   // Obtener todos los edificios
   getAllBuildings(): Building[] {
     return Array.from(this.buildings.values())

@@ -13,6 +13,7 @@ import type { Parcel } from '../types'
 import { WORLD_CONFIG, chebyshevDistance, MAX_BUY_DISTANCE, calculateParcelPrice } from '../config/world'
 import { getBiome, type BiomeType } from './BiomeGenerator'
 import { generateDecorations } from './BiomeDecorator'
+import { Building, findBuildingTypeByName } from './Building'
 
 /** Base ground colors per biome */
 const BIOME_COLORS: Record<BiomeType, { r: number; g: number; b: number }> = {
@@ -100,6 +101,11 @@ interface LoadedParcel {
   ownerLabel: Mesh | null
   priceLabel: Mesh | null
   decorations: Mesh[]
+  /** Buildings placed on this parcel (read-only for other players' parcels).
+   *  Key: server placedObject ID, Value: Building instance */
+  buildings: Map<string, Building>
+  /** True if this parcel is in the LOD (low-detail) zone */
+  lowDetail: boolean
 }
 
 export class ParcelManager {
@@ -107,8 +113,13 @@ export class ParcelManager {
   private loadedParcels: Map<string, LoadedParcel> = new Map()
   private currentParcelX: number = 0
   private currentParcelY: number = 0
+  private prevParcelX: number = 0
+  private prevParcelY: number = 0
   private onEditParcelCallback: ((parcel: Parcel) => void) | null = null
   private onBuyParcelCallback: ((parcel: Parcel) => void) | null = null
+
+  /** Cache of parcel data (ownerId) from previous visits */
+  private parcelDataCache: Map<string, { ownerId: string | null }> = new Map()
 
   /** Parcelas propiedad del jugador local (para calcular zona de compra) */
   private playerParcels: Parcel[] = []
@@ -174,43 +185,110 @@ export class ParcelManager {
       return
     }
 
+    this.prevParcelX = this.currentParcelX
+    this.prevParcelY = this.currentParcelY
     this.currentParcelX = parcelCoords.x
     this.currentParcelY = parcelCoords.y
 
+    // Cache data of parcels about to be unloaded
+    this.cacheUnloadingParcels(parcelCoords.x, parcelCoords.y)
+
     await this.loadParcelsAround(parcelCoords.x, parcelCoords.y)
     this.unloadDistantParcels(parcelCoords.x, parcelCoords.y)
+
+    // Preload parcels in the movement direction (LOD only)
+    const dx = parcelCoords.x - this.prevParcelX
+    const dy = parcelCoords.y - this.prevParcelY
+    if (dx !== 0 || dy !== 0) {
+      this.preloadInDirection(parcelCoords.x, parcelCoords.y, Math.sign(dx), Math.sign(dy))
+    }
   }
 
-  async loadParcelsAround(centerX: number, centerY: number): Promise<void> {
-    const radius = WORLD_CONFIG.LOAD_RADIUS
+  /** Cache parcel ownership data before unloading */
+  private cacheUnloadingParcels(centerX: number, centerY: number): void {
+    const unloadRadius = WORLD_CONFIG.UNLOAD_RADIUS
+    for (const [key, loaded] of this.loadedParcels) {
+      const dist = chebyshevDistance(loaded.parcel.x, loaded.parcel.y, centerX, centerY)
+      if (dist > unloadRadius) {
+        this.parcelDataCache.set(key, { ownerId: loaded.parcel.ownerId })
+      }
+    }
+    // Limit cache size
+    if (this.parcelDataCache.size > 200) {
+      const entries = [...this.parcelDataCache.entries()]
+      this.parcelDataCache = new Map(entries.slice(-150))
+    }
+  }
 
-    for (let x = centerX - radius; x <= centerX + radius; x++) {
-      for (let y = centerY - radius; y <= centerY + radius; y++) {
-        const key = this.getParcelKey(x, y)
+  /** Preload 1 extra row of LOD parcels in the movement direction */
+  private preloadInDirection(cx: number, cy: number, dx: number, dy: number): void {
+    const loadR = WORLD_CONFIG.LOAD_RADIUS
+    const preloadDist = loadR + 1
+
+    if (dx !== 0) {
+      const px = cx + dx * preloadDist
+      for (let y = cy - loadR; y <= cy + loadR; y++) {
+        const key = this.getParcelKey(px, y)
         if (!this.loadedParcels.has(key)) {
-          await this.loadParcel(x, y)
+          this.loadParcel(px, y, true)
+        }
+      }
+    }
+    if (dy !== 0) {
+      const py = cy + dy * preloadDist
+      for (let x = cx - loadR; x <= cx + loadR; x++) {
+        const key = this.getParcelKey(x, py)
+        if (!this.loadedParcels.has(key)) {
+          this.loadParcel(x, py, true)
         }
       }
     }
   }
 
-  private async loadParcel(parcelX: number, parcelY: number): Promise<void> {
+  async loadParcelsAround(centerX: number, centerY: number): Promise<void> {
+    const loadRadius = WORLD_CONFIG.LOAD_RADIUS
+    const detailRadius = WORLD_CONFIG.DETAIL_RADIUS
+
+    for (let x = centerX - loadRadius; x <= centerX + loadRadius; x++) {
+      for (let y = centerY - loadRadius; y <= centerY + loadRadius; y++) {
+        const dist = chebyshevDistance(x, y, centerX, centerY)
+        const lowDetail = dist > detailRadius
+        const key = this.getParcelKey(x, y)
+        const existing = this.loadedParcels.get(key)
+
+        if (!existing) {
+          await this.loadParcel(x, y, lowDetail)
+        } else if (existing.lowDetail && !lowDetail) {
+          // Upgrade from LOD to full detail
+          this.unloadParcel(key)
+          await this.loadParcel(x, y, false)
+        } else if (!existing.lowDetail && lowDetail) {
+          // Downgrade from full to LOD
+          this.unloadParcel(key)
+          await this.loadParcel(x, y, true)
+        }
+      }
+    }
+  }
+
+  private async loadParcel(parcelX: number, parcelY: number, lowDetail: boolean = false): Promise<void> {
     const key = this.getParcelKey(parcelX, parcelY)
 
-    // Determinar si tiene dueño (en producción vendría del servidor)
+    // Determine owner: check player parcels, then cache, then null
     const isOwn = this.playerParcels.some(p => p.x === parcelX && p.y === parcelY)
+    const cached = this.parcelDataCache.get(key)
     const parcel: Parcel = {
       id: key,
-      ownerId: isOwn ? this.localPlayerId : null,
+      ownerId: isOwn ? this.localPlayerId : (cached?.ownerId ?? null),
       x: parcelX,
       y: parcelY,
     }
 
-    this.createParcelMeshes(key, parcel)
+    this.createParcelMeshes(key, parcel, lowDetail)
   }
 
   /** Shared mesh creation for both local and server parcels */
-  private createParcelMeshes(key: string, parcel: Parcel): void {
+  private createParcelMeshes(key: string, parcel: Parcel, lowDetail: boolean = false): void {
     const isOwn = !!parcel.ownerId && this.isOwnParcel(parcel.ownerId)
     const isOther = !!parcel.ownerId && !isOwn
     const purchasable = !parcel.ownerId && this.isPurchasable(parcel.x, parcel.y)
@@ -218,10 +296,10 @@ export class ParcelManager {
     const worldCoords = this.parcelToWorldCoords(parcel.x, parcel.y)
     const size = WORLD_CONFIG.PARCEL_SIZE
 
-    // Crear ground
+    // Ground mesh (LOD: fewer subdivisions for distant parcels)
     const ground = MeshBuilder.CreateGround(
       `parcel_ground_${key}`,
-      { width: size, height: size },
+      { width: size, height: size, subdivisions: lowDetail ? 1 : 2 },
       this.scene
     )
     ground.position.x = worldCoords.x + size / 2
@@ -233,30 +311,36 @@ export class ParcelManager {
     material.diffuseColor = computeGroundColor(biome, parcel.x, parcel.y, isOwn, isOther, purchasable)
     material.specularColor = new Color3(0.1, 0.1, 0.1)
     ground.material = material
-    ground.isPickable = true
+    ground.isPickable = !lowDetail
 
-    // Borde según estado
+    // Border
     const border = this.createParcelBorder(parcel.x, parcel.y, key, isOwn, purchasable, isOther)
 
-    // Iconos y etiquetas
+    // In LOD mode: skip icons, labels, and decorations
     let editIcon: Mesh | null = null
     let buyIcon: Mesh | null = null
     let ownerLabel: Mesh | null = null
     let priceLabel: Mesh | null = null
-    if (isOwn) {
-      editIcon = this.createEditIcon(parcel.x, parcel.y, key, parcel)
-    } else if (isOther) {
-      ownerLabel = this.createOwnerLabel(parcel.x, parcel.y, key, parcel.ownerId!)
-    } else if (purchasable) {
-      buyIcon = this.createBuyIcon(parcel.x, parcel.y, key, parcel)
-      priceLabel = this.createPriceLabel(parcel.x, parcel.y, key)
+    let decorations: Mesh[] = []
+
+    if (!lowDetail) {
+      if (isOwn) {
+        editIcon = this.createEditIcon(parcel.x, parcel.y, key, parcel)
+      } else if (isOther) {
+        ownerLabel = this.createOwnerLabel(parcel.x, parcel.y, key, parcel.ownerId!)
+      } else if (purchasable) {
+        buyIcon = this.createBuyIcon(parcel.x, parcel.y, key, parcel)
+        priceLabel = this.createPriceLabel(parcel.x, parcel.y, key)
+      }
+
+      // Biome decorations (only on unowned parcels)
+      if (!parcel.ownerId) {
+        const neighbors = getNeighborBiomes(parcel.x, parcel.y)
+        decorations = generateDecorations(this.scene, parcel.x, parcel.y, biome, neighbors)
+      }
     }
 
-    // Generate biome decorations (only on parcels without owner to avoid clashing with buildings)
-    const neighbors = getNeighborBiomes(parcel.x, parcel.y)
-    const decorations = parcel.ownerId ? [] : generateDecorations(this.scene, parcel.x, parcel.y, biome, neighbors)
-
-    this.loadedParcels.set(key, { parcel, ground, border, editIcon, buyIcon, ownerLabel, priceLabel, decorations })
+    this.loadedParcels.set(key, { parcel, ground, border, editIcon, buyIcon, ownerLabel, priceLabel, decorations, buildings: new Map(), lowDetail })
   }
 
   private createEditIcon(parcelX: number, parcelY: number, key: string, parcel: Parcel): Mesh {
@@ -519,6 +603,7 @@ export class ParcelManager {
       if (loaded.ownerLabel) loaded.ownerLabel.dispose()
       if (loaded.priceLabel) loaded.priceLabel.dispose()
       for (const deco of loaded.decorations) deco.dispose()
+      for (const bld of loaded.buildings.values()) bld.dispose()
       this.loadedParcels.delete(key)
     }
   }
@@ -532,6 +617,7 @@ export class ParcelManager {
       if (loaded.ownerLabel) loaded.ownerLabel.setEnabled(visible)
       if (loaded.priceLabel) loaded.priceLabel.setEnabled(visible)
       for (const deco of loaded.decorations) deco.setEnabled(visible)
+      for (const bld of loaded.buildings.values()) bld.rootNode.setEnabled(visible)
     }
   }
 
@@ -602,6 +688,10 @@ export class ParcelManager {
     this.localPlayerId = id
   }
 
+  getLocalPlayerId(): string {
+    return this.localPlayerId
+  }
+
   private isOwnParcel(ownerId: string): boolean {
     return ownerId === this.localPlayerId
   }
@@ -627,9 +717,14 @@ export class ParcelManager {
     if (loaded.buyIcon) { loaded.buyIcon.dispose(); loaded.buyIcon = null }
     if (loaded.ownerLabel) { loaded.ownerLabel.dispose(); loaded.ownerLabel = null }
     if (loaded.priceLabel) { loaded.priceLabel.dispose(); loaded.priceLabel = null }
-    // Update decorations: remove when owned (buildings occupy space), add back if unowned
+    // Update decorations: remove when owned or in LOD mode, add back if unowned + full detail
     for (const deco of loaded.decorations) deco.dispose()
-    loaded.decorations = parcel.ownerId ? [] : generateDecorations(this.scene, parcel.x, parcel.y, biome)
+    if (!loaded.lowDetail && !parcel.ownerId) {
+      const neighbors = getNeighborBiomes(parcel.x, parcel.y)
+      loaded.decorations = generateDecorations(this.scene, parcel.x, parcel.y, biome, neighbors)
+    } else {
+      loaded.decorations = []
+    }
     if (isOwn) {
       loaded.editIcon = this.createEditIcon(parcel.x, parcel.y, key, parcel)
     } else if (isOther) {
@@ -642,6 +737,51 @@ export class ParcelManager {
 
   worldToParcel(worldX: number, worldZ: number): { x: number; y: number } {
     return this.worldToParcelCoords(worldX, worldZ)
+  }
+
+  /** Add a building to a loaded parcel (read-only, for viewing other players' constructions) */
+  addBuildingToParcel(parcelX: number, parcelY: number, serverObjectId: string, objectName: string, localX: number, localY: number): void {
+    const key = this.getParcelKey(parcelX, parcelY)
+    const loaded = this.loadedParcels.get(key)
+    if (!loaded || loaded.lowDetail) return
+    if (loaded.buildings.has(serverObjectId)) return // Already rendered
+
+    const buildingType = findBuildingTypeByName(objectName)
+    if (!buildingType) return
+
+    const worldCoords = this.parcelToWorldCoords(parcelX, parcelY)
+    const worldX = worldCoords.x + localX + buildingType.sizeX / 2
+    const worldZ = worldCoords.z + localY + buildingType.sizeZ / 2
+
+    const building = new Building(
+      this.scene,
+      buildingType,
+      localX,
+      localY,
+      new Vector3(worldX, 0, worldZ)
+    )
+    building.setNormalMode()
+    building.mesh.isPickable = false
+
+    loaded.buildings.set(serverObjectId, building)
+  }
+
+  /** Remove a building from a loaded parcel by server placed object ID */
+  removeBuildingFromParcel(parcelX: number, parcelY: number, serverObjectId: string): void {
+    const key = this.getParcelKey(parcelX, parcelY)
+    const loaded = this.loadedParcels.get(key)
+    if (!loaded) return
+
+    const building = loaded.buildings.get(serverObjectId)
+    if (building) {
+      building.dispose()
+      loaded.buildings.delete(serverObjectId)
+    }
+  }
+
+  /** Get a loaded parcel's data by coordinates */
+  getLoadedParcel(parcelX: number, parcelY: number): LoadedParcel | undefined {
+    return this.loadedParcels.get(this.getParcelKey(parcelX, parcelY))
   }
 
   dispose(): void {

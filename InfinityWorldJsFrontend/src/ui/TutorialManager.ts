@@ -1,11 +1,12 @@
 import { notifications } from './NotificationManager'
+import { t } from '../i18n'
 
 const STORAGE_KEY = 'iw_tutorial_done'
 
 interface TutorialStep {
   id: string
-  title: string
-  message: string
+  titleKey: string
+  messageKey: string
   /** CSS selector of element to highlight (optional) */
   target?: string
   /** Position of tooltip relative to target */
@@ -19,35 +20,35 @@ interface TutorialStep {
 const STEPS: TutorialStep[] = [
   {
     id: 'welcome',
-    title: 'Bienvenido a Infinity World!',
-    message: 'Construye tu mundo en parcelas que puedes comprar y personalizar.',
+    titleKey: 'tutorial.welcome.title',
+    messageKey: 'tutorial.welcome.msg',
     autoAdvanceMs: 4000,
   },
   {
     id: 'buy_parcel',
-    title: 'Compra tu primera parcela',
-    message: 'Haz clic en una esfera verde sobre una parcela disponible para comprarla.',
+    titleKey: 'tutorial.buyParcel.title',
+    messageKey: 'tutorial.buyParcel.msg',
     waitForEvent: 'parcelBought',
   },
   {
     id: 'edit_mode',
-    title: 'Entra en modo edicion',
-    message: 'Haz clic en el cubo naranja sobre tu parcela para editarla.',
+    titleKey: 'tutorial.editMode.title',
+    messageKey: 'tutorial.editMode.msg',
     waitForEvent: 'gameModeChange',
   },
   {
     id: 'place_building',
-    title: 'Coloca tu primer edificio',
-    message: 'Selecciona un edificio del panel inferior y toca el terreno para colocarlo.',
+    titleKey: 'tutorial.placeBuilding.title',
+    messageKey: 'tutorial.placeBuilding.msg',
     target: '#build-panel',
     position: 'top',
-    waitForEvent: 'buildPlaced',
-    autoAdvanceMs: 15000,  // fallback if event doesn't fire
+    waitForEvent: 'buildingPlaced',
+    autoAdvanceMs: 15000,
   },
   {
     id: 'done',
-    title: 'Tutorial completado!',
-    message: 'Ahora puedes explorar el mundo, comprar mas parcelas y construir tu ciudad.',
+    titleKey: 'tutorial.done.title',
+    messageKey: 'tutorial.done.msg',
     autoAdvanceMs: 4000,
   },
 ]
@@ -89,8 +90,8 @@ export class TutorialManager {
         <div class="tutorial-title"></div>
         <div class="tutorial-message"></div>
         <div class="tutorial-actions">
-          <button class="tutorial-btn tutorial-skip">Saltar</button>
-          <button class="tutorial-btn tutorial-next">Siguiente</button>
+          <button class="tutorial-btn tutorial-skip">${t('tutorial.skip')}</button>
+          <button class="tutorial-btn tutorial-next">${t('tutorial.next')}</button>
         </div>
         <div class="tutorial-progress"></div>
       </div>
@@ -121,8 +122,8 @@ export class TutorialManager {
     const progress = this.tooltip!.querySelector('.tutorial-progress')!
     const nextBtn = this.tooltip!.querySelector('.tutorial-next') as HTMLButtonElement
 
-    title.textContent = step.title
-    message.textContent = step.message
+    title.textContent = t(step.titleKey)
+    message.textContent = t(step.messageKey)
     progress.textContent = `${this.currentStep + 1} / ${STEPS.length}`
 
     // Show/hide next button based on whether we wait for an event
@@ -166,7 +167,7 @@ export class TutorialManager {
     }
 
     // Notify
-    notifications.notify(step.message, 'info')
+    notifications.notify(t(step.messageKey), 'info')
   }
 
   private positionTooltip(target: HTMLElement, position: string): void {

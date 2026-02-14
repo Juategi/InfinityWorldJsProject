@@ -22,7 +22,9 @@
       "Bash(npm run seed:*)",
       "Bash(npx kill-port:*)",
       "Bash(taskkill:*)",
-      "Bash(npm ls:*)"
+      "Bash(npm ls:*)",
+      "Bash(npx vitest run)",
+      "Bash(npx vitest run:*)"
     ]
   }
 }

@@ -359,6 +359,67 @@ html, body {
   flex-shrink: 0;
 }
 
+/* ===== PANTALLA PERFIL ===== */
+.profile-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 24px 0;
+  gap: 12px;
+}
+
+.profile-avatar {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, rgba(80, 120, 255, 0.3), rgba(140, 80, 255, 0.3));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+}
+
+.profile-avatar svg {
+  width: 40px;
+  height: 40px;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.profile-name {
+  font-size: 20px;
+  font-weight: 700;
+  color: #fff;
+}
+
+.profile-stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  padding: 0 8px;
+}
+
+.profile-stat {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 16px;
+  text-align: center;
+}
+
+.profile-stat-value {
+  font-size: 24px;
+  font-weight: 700;
+  color: #8ab4ff;
+  margin-bottom: 4px;
+}
+
+.profile-stat-label {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.5);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
 /* ===== PANTALLA AJUSTES ===== */
 .settings-sections {
   display: flex;
@@ -407,6 +468,21 @@ html, body {
   font-size: 14px;
   color: rgba(255, 255, 255, 0.5);
   font-weight: 500;
+}
+
+.settings-select {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  color: #fff;
+  padding: 6px 12px;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.settings-select option {
+  background: #1a1a2e;
+  color: #fff;
 }
 
 /* Toggle Switch */
@@ -1289,6 +1365,89 @@ html, body {
   font-size: 13px;
 }
 
+/* ===== TUTORIAL ===== */
+.tutorial-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  background: rgba(0, 0, 0, 0.45);
+  pointer-events: none;
+}
+
+.tutorial-tooltip {
+  pointer-events: auto;
+  position: fixed;
+  width: 300px;
+  background: linear-gradient(180deg, rgba(30, 30, 50, 0.97) 0%, rgba(20, 20, 35, 0.97) 100%);
+  border: 1px solid rgba(100, 140, 255, 0.4);
+  border-radius: 14px;
+  padding: 18px 20px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5), 0 0 20px rgba(80, 120, 255, 0.15);
+  color: #fff;
+  animation: tutorial-fade-in 0.35s ease-out;
+}
+
+@keyframes tutorial-fade-in {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.tutorial-title {
+  font-size: 16px;
+  font-weight: 700;
+  margin-bottom: 8px;
+  color: #8ab4ff;
+}
+
+.tutorial-message {
+  font-size: 13px;
+  line-height: 1.5;
+  color: rgba(255, 255, 255, 0.85);
+  margin-bottom: 14px;
+}
+
+.tutorial-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.tutorial-btn {
+  padding: 6px 16px;
+  border: none;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.tutorial-skip {
+  background: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.tutorial-skip:hover {
+  background: rgba(255, 255, 255, 0.18);
+  color: #fff;
+}
+
+.tutorial-next {
+  background: rgba(80, 120, 255, 0.7);
+  color: #fff;
+}
+
+.tutorial-next:hover {
+  background: rgba(80, 120, 255, 0.9);
+}
+
+.tutorial-progress {
+  text-align: center;
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.35);
+  margin-top: 10px;
+}
+
 /* ===== PANTALLA TIENDA ===== */
 .shop-coins {
   margin-left: auto;
@@ -1695,4 +1854,134 @@ html, body {
     width: 20px;
     height: 20px;
   }
+}
+
+/* ── Players Panel ─────────────────────── */
+
+.players-count-badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  background: #4caf50;
+  color: #fff;
+  font-size: 10px;
+  font-weight: bold;
+  min-width: 16px;
+  height: 16px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 4px;
+  pointer-events: none;
+}
+
+#btn-players {
+  position: relative;
+}
+
+.players-panel {
+  position: fixed;
+  top: 60px;
+  right: 12px;
+  width: 260px;
+  max-height: 400px;
+  background: rgba(20, 20, 30, 0.95);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 12px;
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  backdrop-filter: blur(8px);
+}
+
+.players-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  font-size: 14px;
+  font-weight: 600;
+  color: #fff;
+}
+
+.players-panel-close {
+  background: none;
+  border: none;
+  color: #aaa;
+  font-size: 20px;
+  cursor: pointer;
+  padding: 0 4px;
+  line-height: 1;
+}
+
+.players-panel-close:hover {
+  color: #fff;
+}
+
+.players-list {
+  overflow-y: auto;
+  max-height: 340px;
+  padding: 6px 0;
+}
+
+.player-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 14px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.player-item:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.player-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: bold;
+  color: #fff;
+  flex-shrink: 0;
+}
+
+.player-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.player-name {
+  font-size: 13px;
+  font-weight: 500;
+  color: #fff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.player-parcels {
+  font-size: 11px;
+  color: #aaa;
+}
+
+.player-item-you .player-name::after {
+  content: ' (tu)';
+  color: #4caf50;
+  font-size: 11px;
+}
+
+.players-empty {
+  text-align: center;
+  color: #888;
+  padding: 20px 14px;
+  font-size: 13px;
 }

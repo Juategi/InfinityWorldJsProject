@@ -46,6 +46,27 @@ export async function checkConnection(): Promise<boolean> {
 }
 
 /**
+ * Execute a callback within a PostgreSQL transaction.
+ * Automatically handles BEGIN/COMMIT/ROLLBACK and client release.
+ */
+export async function withTransaction<T>(
+  callback: (client: PoolClient) => Promise<T>
+): Promise<T> {
+  const client = await getPool().connect();
+  try {
+    await client.query("BEGIN");
+    const result = await callback(client);
+    await client.query("COMMIT");
+    return result;
+  } catch (err) {
+    await client.query("ROLLBACK");
+    throw err;
+  } finally {
+    client.release();
+  }
+}
+
+/**
  * Gracefully close all pool connections.
  */
 export async function closePool(): Promise<void> {

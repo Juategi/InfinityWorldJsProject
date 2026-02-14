@@ -43,6 +43,19 @@ export class WorldSync {
         y: parcel.y,
       })
 
+      // Listen for placed objects on this parcel (fires for existing + new objects)
+      if (parcel.objects) {
+        parcel.objects.onAdd((obj: any) => {
+          if (this.disposed) return
+          this.parcelManager.addBuildingToParcel(parcel.x, parcel.y, obj.id, obj.objectName, obj.localX, obj.localY)
+        })
+
+        parcel.objects.onRemove((obj: any) => {
+          if (this.disposed) return
+          this.parcelManager.removeBuildingFromParcel(parcel.x, parcel.y, obj.id)
+        })
+      }
+
       // Listen for ownership changes on this parcel
       parcel.onChange(() => {
         if (this.disposed) return
@@ -59,6 +72,21 @@ export class WorldSync {
     state.parcels.onRemove((_parcel: any, key: string) => {
       if (this.disposed) return
       this.parcelManager.removeParcelByKey(key)
+    })
+
+    // Listen for players joining/leaving
+    state.players.onAdd((player: any, _key: string) => {
+      if (this.disposed) return
+      document.dispatchEvent(new CustomEvent('playerJoined', {
+        detail: { id: player.id, name: player.name, coins: player.coins }
+      }))
+    })
+
+    state.players.onRemove((player: any, _key: string) => {
+      if (this.disposed) return
+      document.dispatchEvent(new CustomEvent('playerLeft', {
+        detail: { id: player.id, name: player.name }
+      }))
     })
 
     // Listen for server messages
@@ -138,6 +166,16 @@ export class WorldSync {
   /** Send a delete build request to the server */
   deleteBuild(placedObjectId: string): void {
     this.room.send("deleteBuild", { placedObjectId })
+  }
+
+  /** Get list of online players from room state */
+  getOnlinePlayers(): Array<{ id: string; name: string; coins: number }> {
+    const players: Array<{ id: string; name: string; coins: number }> = []
+    const state = this.room.state as { players: { forEach: (cb: (p: any, k: string) => void) => void } }
+    state.players.forEach((p: any) => {
+      players.push({ id: p.id, name: p.name, coins: p.coins })
+    })
+    return players
   }
 
   dispose(): void {

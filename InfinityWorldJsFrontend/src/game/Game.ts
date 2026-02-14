@@ -13,6 +13,7 @@ import { InputManager } from './InputManager'
 import { ParcelManager } from './ParcelManager'
 import type { GameState, GameMode, Parcel } from '../types'
 import { WORLD_CONFIG } from '../config/world'
+import { quality, type QualityConfig } from '../config/QualitySettings'
 import type { WorldSync } from '../network/WorldSync'
 
 export class Game {
@@ -98,6 +99,7 @@ export class Game {
 
     this.currentMode = 'edit'
     this.editingParcel = parcel
+    document.dispatchEvent(new CustomEvent('gameModeChange', { detail: { mode: 'edit' } }))
 
     // Guardar posición de cámara
     this.savedCameraPosition = this.camera.target.clone()
@@ -244,7 +246,11 @@ export class Game {
     })
   }
 
+  private directionalLight: DirectionalLight | null = null
+
   private setupLighting(): void {
+    const config = quality.getConfig()
+
     // Luz ambiental
     const hemisphericLight = new HemisphericLight(
       'hemisphericLight',
@@ -255,26 +261,62 @@ export class Game {
     hemisphericLight.diffuse = new Color3(1, 1, 1)
     hemisphericLight.groundColor = new Color3(0.4, 0.4, 0.5)
 
-    // Luz direccional (sol) con sombras
-    const directionalLight = new DirectionalLight(
+    // Luz direccional (sol)
+    this.directionalLight = new DirectionalLight(
       'directionalLight',
       new Vector3(-1, -2, -1),
       this.scene
     )
-    directionalLight.intensity = 0.8
-    directionalLight.diffuse = new Color3(1, 0.95, 0.8)
+    this.directionalLight.intensity = 0.8
+    this.directionalLight.diffuse = new Color3(1, 0.95, 0.8)
 
-    // Sombras básicas
-    const shadowGen = new ShadowGenerator(1024, directionalLight)
-    shadowGen.useBlurExponentialShadowMap = true
-    shadowGen.blurScale = 2
-    this.shadowGenerator = shadowGen
+    // Sombras (based on quality)
+    if (config.shadowsEnabled) {
+      const shadowGen = new ShadowGenerator(config.shadowMapSize, this.directionalLight)
+      shadowGen.useBlurExponentialShadowMap = true
+      shadowGen.blurScale = 2
+      this.shadowGenerator = shadowGen
+    }
 
-    // Niebla en la distancia para disimular borde de carga
-    this.scene.fogMode = Scene.FOGMODE_LINEAR
-    this.scene.fogColor = new Color3(0.4, 0.6, 0.9) // Mismo tono que cielo
-    this.scene.fogStart = 200
-    this.scene.fogEnd = 400
+    // Niebla
+    if (config.fogEnabled) {
+      this.scene.fogMode = Scene.FOGMODE_LINEAR
+      this.scene.fogColor = new Color3(0.4, 0.6, 0.9)
+      this.scene.fogStart = 200
+      this.scene.fogEnd = 400
+    }
+
+    // FPS limit
+    if (config.maxFps > 0) {
+      this.engine.setHardwareScalingLevel(1)
+    }
+
+    // Listen for quality changes
+    quality.onChange((newConfig) => this.applyQuality(newConfig))
+  }
+
+  /** Apply quality settings at runtime */
+  private applyQuality(config: QualityConfig): void {
+    // Shadows
+    if (!config.shadowsEnabled && this.shadowGenerator) {
+      this.shadowGenerator.dispose()
+      this.shadowGenerator = null
+    } else if (config.shadowsEnabled && !this.shadowGenerator && this.directionalLight) {
+      this.shadowGenerator = new ShadowGenerator(config.shadowMapSize, this.directionalLight)
+      this.shadowGenerator.useBlurExponentialShadowMap = true
+      this.shadowGenerator.blurScale = 2
+    }
+
+    // Fog
+    if (config.fogEnabled) {
+      this.scene.fogMode = Scene.FOGMODE_LINEAR
+    } else {
+      this.scene.fogMode = Scene.FOGMODE_NONE
+    }
+
+    // Update load radii in WORLD_CONFIG
+    WORLD_CONFIG.LOAD_RADIUS = config.loadRadius
+    WORLD_CONFIG.DETAIL_RADIUS = config.detailRadius
   }
 
   getShadowGenerator(): ShadowGenerator | null {

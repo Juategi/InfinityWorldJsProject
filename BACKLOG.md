@@ -389,7 +389,7 @@ Backlog de tareas ordenado por prioridad. Cada tarea es lo suficientemente concr
 - Toast mejorado con iconos y tipos (éxito, error, info)
 - Historial de notificaciones accesible desde el menú
 
-### 8.2 Tutorial / Onboarding
+### 8.2 Tutorial / Onboarding ✅
 
 - Secuencia guiada para nuevos jugadores:
   1. "Bienvenido a Infinity World"
@@ -398,13 +398,13 @@ Backlog de tareas ordenado por prioridad. Cada tarea es lo suficientemente concr
   4. "Coloca tu primer edificio"
 - Tooltips contextuales en la primera vez que se usa cada función
 
-### 8.3 Perfil del jugador
+### 8.3 Perfil del jugador ✅
 
 - Pantalla con: nombre, monedas, número de parcelas, número de edificios
 - Estadísticas básicas
 - Accesible desde menú principal
 
-### 8.4 Sistema de sonido básico
+### 8.4 Sistema de sonido básico ✅
 
 - Sonidos para: colocar edificio, eliminar, comprar, abrir menú, error
 - Música de fondo ambiental
@@ -414,19 +414,19 @@ Backlog de tareas ordenado por prioridad. Cada tarea es lo suficientemente concr
 
 ## Fase 9: Optimización y Polish
 
-### 9.1 LOD (Level of Detail) para el mundo
+### 9.1 LOD (Level of Detail) para el mundo ✅
 
 - Edificios lejanos se renderizan como cajas simples
 - Parcelas lejanas muestran solo el suelo sin detalles
 - Frustum culling y occlusion culling
 
-### 9.2 Caché y carga optimizada
+### 9.2 Caché y carga optimizada ✅
 
 - Cachear datos de parcelas ya visitadas
 - Precargar parcelas en la dirección de movimiento
 - Lazy loading de meshes pesados
 
-### 9.3 Performance mobile
+### 9.3 Performance mobile ✅
 
 - Ajustes de calidad gráfica (bajo/medio/alto)
 - Reducir partículas y sombras en modo bajo
@@ -437,21 +437,16 @@ Backlog de tareas ordenado por prioridad. Cada tarea es lo suficientemente concr
 
 ## Fase 10: Multijugador Visible
 
-### 10.1 Ver otros jugadores en el mundo
-
-- Avatares simples (capsule mesh con nombre flotante)
-- Posición sincronizada en tiempo real vía Colyseus
-- Indicador de jugadores cercanos
-
-### 10.2 Ver construcciones de otros jugadores
+### 10.1 Ver construcciones de otros jugadores ✅
 
 - Al pasar por parcelas ajenas, ver sus edificios (solo lectura)
 - Diferenciación visual: parcela propia (editable) vs ajena (solo vista)
 
-### 10.3 Interacciones sociales básicas
+### 10.2 Lista de jugadores online ✅
 
-- Tocar un jugador para ver su perfil
-- Lista de jugadores online
+- Panel accesible desde el HUD con lista de jugadores conectados
+- Mostrar nombre y número de parcelas de cada jugador
+- Opción de ir a la parcela de un jugador (navegar cámara)
 
 ---
 
@@ -483,20 +478,20 @@ Backlog de tareas ordenado por prioridad. Cada tarea es lo suficientemente concr
 
 ## Fase 12: Internacionalización (i18n)
 
-### 12.1 Sistema de traducciones
+### 12.1 Sistema de traducciones ✅
 
-- Crear módulo i18n con diccionarios JSON por idioma (es, en como mínimo)
+- Crear módulo i18n con diccionarios JSON por idioma (es, en, fr, de como mínimo)
 - Función `t(key)` para obtener textos traducidos
 - Detección automática del idioma del navegador/dispositivo
 - Fallback a español si el idioma no está soportado
 
-### 12.2 Traducir UI del frontend
+### 12.2 Traducir UI del frontend ✅
 
 - Traducir todas las pantallas: menú principal, parcelas, tienda, ajustes, HUD
 - Traducir toasts, diálogos de confirmación y mensajes de error
 - Traducir nombres de categorías y eras en el catálogo
 
-### 12.3 Selector de idioma en Ajustes
+### 12.3 Selector de idioma en Ajustes ✅
 
 - Dropdown/selector de idioma en la pantalla de Ajustes
 - Persistir preferencia en localStorage
@@ -506,7 +501,7 @@ Backlog de tareas ordenado por prioridad. Cada tarea es lo suficientemente concr
 
 ## Fase 13: Seguridad y Validación del Backend
 
-### 13.1 Middleware de autorización por ownership
+### 13.1 Middleware de autorización por ownership ✅
 
 - Crear middleware `requirePlayer` que extraiga el `playerId` del contexto autenticado (header, token JWT, sesión, etc.)
 - Inyectar `req.playerId` en todas las rutas protegidas
@@ -516,7 +511,7 @@ Backlog de tareas ordenado por prioridad. Cada tarea es lo suficientemente concr
 - Devolver 401 si no hay jugador identificado, 403 si intenta actuar sobre otro jugador
 - Tests: petición sin auth → 401, petición con auth sobre otro jugador → 403, petición legítima → 200
 
-### 13.2 Validación estricta de inputs en todos los endpoints
+### 13.2 Validación estricta de inputs en todos los endpoints ✅
 
 - Instalar librería de validación de esquemas (`zod` recomendado)
 - **POST `/players/:id/coins`**: validar que `amount` sea entero, distinto de 0, con límite razonable (ej: -100000 ≤ amount ≤ 100000). Rechazar NaN, Infinity, floats
@@ -530,7 +525,7 @@ Backlog de tareas ordenado por prioridad. Cada tarea es lo suficientemente concr
 - Middleware genérico `validate(schema)` que parsee body/query/params y devuelva 400 con errores descriptivos
 - Tests: enviar NaN, Infinity, strings donde van números, UUIDs malformados, valores fuera de rango → todos 400
 
-### 13.3 Transacciones atómicas en operaciones de compra
+### 13.3 Transacciones atómicas en operaciones de compra ✅
 
 - **POST `/parcels/buy`**: envolver en transacción PostgreSQL (`BEGIN` → verificar propiedad → verificar proximidad → verificar saldo → descontar monedas → crear/asignar parcela → `COMMIT`)
 - **POST `/shop/buy`**: envolver en transacción (`BEGIN` → verificar existencia objeto → verificar no duplicado → verificar saldo → descontar monedas → insertar inventario → `COMMIT`)
@@ -539,7 +534,7 @@ Backlog de tareas ordenado por prioridad. Cada tarea es lo suficientemente concr
 - Si cualquier paso falla → `ROLLBACK` completo, ningún cambio persiste
 - Tests de concurrencia: lanzar 10 compras simultáneas de la misma parcela → solo 1 éxito, 9 rechazos. Lanzar 10 compras del mismo objeto → solo 1 cobro
 
-### 13.4 Rate limiting por IP y por jugador
+### 13.4 Rate limiting por IP y por jugador ✅
 
 - Instalar `express-rate-limit` (o similar)
 - **Rate limit global**: máximo 100 requests/minuto por IP
@@ -549,7 +544,7 @@ Backlog de tareas ordenado por prioridad. Cada tarea es lo suficientemente concr
 - Considerar usar Redis como store del rate limiter para que funcione con múltiples instancias del backend
 - Tests: enviar ráfaga de peticiones → verificar que se bloquean tras el límite
 
-### 13.5 Configuración CORS
+### 13.5 Configuración CORS ✅
 
 - Instalar paquete `cors`
 - Configurar origins permitidos desde variable de entorno `ALLOWED_ORIGINS` (ej: `http://localhost:5173` en dev)
@@ -558,7 +553,7 @@ Backlog de tareas ordenado por prioridad. Cada tarea es lo suficientemente concr
 - Denegar credentials de orígenes no permitidos
 - En producción, restringir a los dominios exactos del frontend
 
-### 13.6 Restricciones de integridad en base de datos
+### 13.6 Restricciones de integridad en base de datos ✅
 
 - **Migración**: añadir constraint `UNIQUE(x, y)` en tabla `parcels` (evitar dos parcelas en la misma coordenada)
 - **Migración**: añadir `FOREIGN KEY (owner_id) REFERENCES players(id)` en tabla `parcels`
@@ -569,7 +564,7 @@ Backlog de tareas ordenado por prioridad. Cada tarea es lo suficientemente concr
 - Ejecutar migración y verificar que los datos existentes cumplen las restricciones
 - Tests: intentar insertar parcela duplicada en (x,y) → error de BD capturado y devuelto como 409
 
-### 13.7 Proteger endpoint de monedas (admin-only)
+### 13.7 Proteger endpoint de monedas (admin-only) ✅
 
 - El endpoint POST `/players/:id/coins` es extremadamente peligroso: permite sumar/restar monedas arbitrariamente
 - **Opción A (recomendada)**: eliminar el endpoint público. Las monedas solo se modifican internamente (compras de parcelas, compras de objetos, recompensas del sistema)
@@ -577,7 +572,7 @@ Backlog de tareas ordenado por prioridad. Cada tarea es lo suficientemente concr
 - Si se mantiene, añadir logging detallado de cada operación (quién, cuánto, desde qué IP, timestamp)
 - Crear endpoint alternativo GET `/players/:id/transactions` para consultar historial de movimientos (audit trail)
 
-### 13.8 Sanitización de errores en producción
+### 13.8 Sanitización de errores en producción ✅
 
 - En modo producción (`NODE_ENV=production`), NO devolver mensajes de error internos ni stack traces
 - Los errores `AppError` (controlados) devuelven su mensaje personalizado
@@ -586,7 +581,7 @@ Backlog de tareas ordenado por prioridad. Cada tarea es lo suficientemente concr
 - Filtrar datos sensibles de los logs en producción (no loggear bodies con tokens, passwords, etc.)
 - El endpoint `/health` en producción no debe revelar nombres de servicios internos (solo `"status": "ok"` o `"status": "degraded"`)
 
-### 13.9 Audit logging para transacciones económicas
+### 13.9 Audit logging para transacciones económicas ✅
 
 - Crear tabla `economy_log` con columnas: `id`, `player_id`, `action` (enum: `buy_parcel`, `buy_object`, `earn_coins`, `spend_coins`), `amount`, `balance_before`, `balance_after`, `metadata` (JSONB con detalles como parcel coords, object id, etc.), `ip_address`, `created_at`
 - Registrar automáticamente en cada operación que modifique monedas o inventario
@@ -682,27 +677,52 @@ Backlog de tareas ordenado por prioridad. Cada tarea es lo suficientemente concr
 
 ### 15.1 Jugador sistema "Infinity" y parcelas centrales reservadas
 
-- Crear en el seeder un jugador especial con nombre `Infinity` (ID fijo/conocido, ej: UUID constante `00000000-0000-0000-0000-000000000000`)
-- Este jugador es propietario de las 4 parcelas centrales: `(0,0)`, `(1,0)`, `(0,1)`, `(1,1)`
-- Las parcelas del jugador Infinity NO pueden ser compradas por ningún jugador (validar en backend en POST `/parcels/buy`)
-- Marcar estas parcelas en BD como `system: true` o simplemente validar por `owner_id` del jugador Infinity
-- En el frontend, las parcelas del jugador Infinity se muestran con un estilo especial (diferente a parcelas de otros jugadores)
+- Definir constante `SYSTEM_PLAYER_ID = "00000000-0000-0000-0000-000000000000"` y `SYSTEM_PLAYER_NAME = "Infinity"` en un archivo compartido de config (ej: `src/config/system.ts` en backend, `src/config/world.ts` en frontend)
+- En el seeder (`seedParcels.ts`), antes de crear Player1, crear el jugador Infinity con ID fijo, nombre "Infinity" y 0 monedas. Usar `INSERT ... ON CONFLICT DO NOTHING` para que sea idempotente
+- Modificar el seeder para crear las 4 parcelas centrales `(0,0)`, `(1,0)`, `(0,1)`, `(1,1)` con `ownerId = SYSTEM_PLAYER_ID`. Actualmente el seeder asigna (0,0) a Player1 — cambiar eso: Player1 pasa a no tener parcela inicial (empieza con 0 parcelas como cualquier jugador nuevo)
+- Ajustar las monedas iniciales de Player1 (actualmente 500) para que tenga suficiente para comprar su primera parcela cerca del centro
 
-### 15.2 Diseño y colocación de la ciudad inicial
+### 15.2 Bloqueo de parcelas sistema en el backend
 
-- Diseñar una ciudad predeterminada que ocupe las 4 parcelas centrales (espacio total: 2×2 parcelas = 32×32 celdas)
-- La ciudad debe ser un punto de referencia visual y temático del mundo (plaza central, edificios icónicos, etc.)
-- Usar objetos del catálogo existente (mezcla de épocas o una época específica, por decidir)
-- Colocar los `placed_objects` en BD durante el seeding (misma estructura que edificios de jugadores normales, pero owner = Infinity)
-- La ciudad debe verse bien desde todos los ángulos ya que es lo primero que verán los jugadores nuevos
+- En POST `/parcels/buy`: añadir validación temprana que rechace compra si la parcela ya existe y su `ownerId === SYSTEM_PLAYER_ID`, con error 403 "System parcels cannot be purchased"
+- También rechazar si la coordenada está en la lista de parcelas sistema `[(0,0), (1,0), (0,1), (1,1)]` aunque la parcela aún no exista en BD (protección contra borrado accidental del seed)
+- En el handler de Colyseus `placeBuild`/`moveBuild`/`deleteBuild` (cuando exista): validar que el `parcelId` no pertenezca al jugador Infinity
+- Exportar función helper `isSystemParcel(x: number, y: number): boolean` que compruebe si las coordenadas son parcelas del sistema (reutilizable en backend y frontend)
 
-### 15.3 Restricciones y comportamiento especial de la ciudad
+### 15.3 Diseño y layout de la ciudad inicial
 
-- Los jugadores NO pueden entrar en modo edición en las parcelas de Infinity (bloquear en frontend y validar en backend)
-- Las parcelas de Infinity no aparecen como "comprables" en la tienda ni en el minimapa
-- En el minimapa, las parcelas de Infinity se muestran con un color especial (ej: dorado/amarillo) diferente a parcelas propias o ajenas
-- La etiqueta flotante sobre estas parcelas muestra "Infinity World" en lugar del nombre de un jugador
-- Los nuevos jugadores empiezan viendo la ciudad central como primer punto de referencia al entrar al mundo
+- Crear archivo `src/seed/seedCity.ts` con la función `seedCity()` que coloque los edificios de la ciudad
+- La ciudad ocupa 4 parcelas = cuadrícula de 200×200 unidades de mundo (cada parcela es 100×100 con celdas de 0-99 en `localX`/`localY`)
+- Diseño propuesto aprovechando el catálogo existente (mezcla de épocas para representar la diversidad del mundo):
+  - **Parcela (0,0) — Plaza Central**: Fuente clásica (2×2) en el centro, Ayuntamiento (4×3) al norte, Banco de hierro y Farola de gas alrededor, Reloj de sol, caminos de Muralla de piedra formando una plaza
+  - **Parcela (1,0) — Barrio Medieval**: Castillo (5×5) como pieza central, Torre de vigilancia (2×2), Herrería (3×3), varias Casas de madera (2×2), Taberna (3×2), Pozo de agua, Antorchas
+  - **Parcela (0,1) — Zona Moderna**: Rascacielos pequeño (3×3), Hospital (4×3), Casa moderna (3×2), Gasolinera (3×2), Parada de bus, Semáforos, Jardín zen
+  - **Parcela (1,1) — Distrito Futurista**: Torre de energía (2×2), Cúpula habitable (4×4), Laboratorio cuántico (3×3), Holograma proyector, Robot guardián, Árbol bioluminiscente
+- Cada `placed_object` se inserta con: `parcelId` (de la parcela correspondiente), `objectId` (del catálogo), `localX`, `localY` (posición dentro de la parcela, respetando los `sizeX`/`sizeY` para que no se solapen)
+- Añadir llamada a `seedCity()` desde `runAllSeeds()` después de `seedCatalog()` (necesita que el catálogo y las parcelas existan)
+
+### 15.4 Visualización especial en el frontend
+
+- En `ParcelManager.createParcelMeshes()`: detectar si `parcel.ownerId === SYSTEM_PLAYER_ID` como un nuevo estado (además de `isOwn`, `isOther`, `purchasable`)
+- **Suelo**: color dorado/ámbar (#8a7a35) diferenciado de los otros estados, con brillo ligeramente mayor
+- **Borde**: color dorado (#d4a837) en lugar de rojo (propio) o azul (comprable)
+- **Sin iconos de edición ni compra**: no mostrar `editIcon` ni `buyIcon` en parcelas del sistema
+- **Etiqueta especial**: mostrar "Infinity World" como `ownerLabel` con textura dorada en vez del UUID del jugador
+- En el minimapa (cuando se implemente Fase 14): las parcelas sistema se pintan en dorado (#d4a837)
+- Las decoraciones de bioma NO se generan sobre parcelas del sistema (ya tienen edificios predefinidos)
+
+### 15.5 Spawn inicial y cámara en la ciudad
+
+- Al entrar al mundo por primera vez (botón "Acceder al Mundo"), la cámara empieza centrada en la ciudad: `camera.target` apunta al centro de las 4 parcelas `(worldX=100, worldZ=100)` en vez de `(50, 0, 50)`
+- Si el jugador tiene parcelas propias y entra desde "Mis Parcelas", la cámara va a su parcela seleccionada (comportamiento actual)
+- Si el jugador tiene parcelas pero entra desde "Acceder al Mundo", centrar en la ciudad igualmente (punto de referencia universal)
+- Añadir botón rápido en el HUD (icono de casa/brújula) que lleve la cámara de vuelta a la ciudad central con animación suave
+
+### 15.6 Tamaño de parcelas, hacerlas de 200x200
+
+- Cambiar el tamaño de parcelas a 200x200
+- Todas las parcelas deben tener el mismo precio no importa la posicion
+- Revisar el sistema de construccion, esta roto, antes se podia construir ahora no se posicionan los objetos en el grid
 
 ---
 

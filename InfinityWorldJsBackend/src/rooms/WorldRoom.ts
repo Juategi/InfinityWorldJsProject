@@ -40,6 +40,8 @@ export class WorldRoom extends Room<WorldState> {
   private repos!: Repositories;
   /** Track which parcels each player has loaded */
   private playerLoadedParcels: Map<string, Set<string>> = new Map();
+  /** Cached catalog: objectId (UUID) → object name */
+  private catalogNames: Map<string, string> = new Map();
 
   onCreate(options: { repos: Repositories }) {
     this.repos = options.repos;
@@ -79,7 +81,21 @@ export class WorldRoom extends Room<WorldState> {
       );
     });
 
+    // Pre-load catalog names for object resolution
+    this.loadCatalogNames().catch(err =>
+      logger.error({ err }, "Failed to load catalog names")
+    );
+
     logger.info("WorldRoom created");
+  }
+
+  /** Load all placeable object names into memory for quick lookup */
+  private async loadCatalogNames(): Promise<void> {
+    const allObjects = await this.repos.placeableObject.findAll();
+    for (const obj of allObjects) {
+      this.catalogNames.set(obj.id, obj.name);
+    }
+    logger.info({ count: this.catalogNames.size }, "Catalog names loaded");
   }
 
   async onJoin(client: Client, options: { playerId?: string }) {
@@ -188,6 +204,7 @@ export class WorldRoom extends Room<WorldState> {
               const os = new PlacedObjectSchema();
               os.id = obj.id;
               os.objectId = obj.objectId;
+              os.objectName = this.catalogNames.get(obj.objectId) || "";
               os.localX = obj.localX;
               os.localY = obj.localY;
               parcelSchema.objects.set(obj.id, os);
@@ -257,6 +274,7 @@ export class WorldRoom extends Room<WorldState> {
       const os = new PlacedObjectSchema();
       os.id = placed.id;
       os.objectId = placed.objectId;
+      os.objectName = this.catalogNames.get(placed.objectId) || "";
       os.localX = placed.localX;
       os.localY = placed.localY;
       parcelSchema.objects.set(placed.id, os);

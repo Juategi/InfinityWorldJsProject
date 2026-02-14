@@ -2,14 +2,15 @@ import { Server } from "colyseus";
 import { WebSocketTransport } from "@colyseus/ws-transport";
 import { createServer } from "http";
 import express from "express";
+import cors from "cors";
 import { config } from "dotenv";
 import { checkConnection, closePool } from "./db";
 import { connectRedis, checkRedisConnection, closeRedis } from "./redis";
 import { createRepositories, Repositories } from "./repositories/factory";
 import { runAllSeeds } from "./seed";
 import { logger } from "./logger";
-import { requestLogger, errorHandler } from "./middleware";
-import { playerRoutes, parcelRoutes, catalogRoutes, shopRoutes } from "./routes";
+import { requestLogger, errorHandler, globalLimiter } from "./middleware";
+import { playerRoutes, parcelRoutes, catalogRoutes, shopRoutes, adminRoutes } from "./routes";
 import { WorldRoom } from "./rooms/WorldRoom";
 
 config();
@@ -20,8 +21,21 @@ let repos: Repositories;
 const app = express();
 const port = Number(process.env.PORT) || 3000;
 
+// CORS configuration
+const allowedOrigins = process.env.ALLOWED_ORIGINS
+  ? process.env.ALLOWED_ORIGINS.split(",").map(s => s.trim())
+  : ["http://localhost:5173"];
+
+app.use(cors({
+  origin: allowedOrigins,
+  methods: ["GET", "POST", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization", "X-Player-Id"],
+  credentials: true,
+}));
+
 app.use(express.json());
 app.use(requestLogger);
+app.use(globalLimiter);
 
 // Health check
 app.get("/health", async (_req, res) => {
@@ -30,11 +44,17 @@ app.get("/health", async (_req, res) => {
   const allOk = dbOk && redisOk;
   const status = allOk ? "ok" : "degraded";
   const code = allOk ? 200 : 503;
-  res.status(code).json({
-    status,
-    db: dbOk ? "connected" : "disconnected",
-    redis: redisOk ? "connected" : "disconnected",
-  });
+
+  // In production: only expose status, no internal service names
+  if (process.env.NODE_ENV === "production") {
+    res.status(code).json({ status });
+  } else {
+    res.status(code).json({
+      status,
+      db: dbOk ? "connected" : "disconnected",
+      redis: redisOk ? "connected" : "disconnected",
+    });
+  }
 });
 
 const server = createServer(app);
@@ -67,6 +87,7 @@ async function start() {
   app.use("/players", playerRoutes(repos));
   app.use("/catalog", catalogRoutes(repos));
   app.use("/shop", shopRoutes(repos));
+  app.use("/admin", adminRoutes());
   app.use(errorHandler);
 
   // Registrar room de Colyseus (necesita repos)

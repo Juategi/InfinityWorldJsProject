@@ -1,6 +1,12 @@
 import { Router } from "express";
+import { z } from "zod";
 import { Repositories } from "../repositories/factory";
 import { AppError } from "../middleware/errorHandler";
+import { requirePlayer, requireBodySelf } from "../middleware/requirePlayer";
+import { validate, CoordinateSchema, UUIDSchema, RadiusSchema } from "../middleware/validate";
+import { buyLimiter, readLimiter } from "../middleware/rateLimiter";
+import { withTransaction } from "../db";
+import { logEconomyEvent } from "../services/economyLog";
 import { WORLD_CONFIG } from "../config/world";
 import {
   calculateParcelPrice,
@@ -8,16 +14,37 @@ import {
   MAX_BUY_DISTANCE,
 } from "../config/parcels";
 
+const parcelsQuerySchema = z.object({
+  x: z.coerce.number().int().min(-1000000).max(1000000).default(0),
+  y: z.coerce.number().int().min(-1000000).max(1000000).default(0),
+  radius: z.coerce.number().int().min(1).max(50).default(2),
+});
+
+const priceQuerySchema = z.object({
+  x: z.coerce.number().int().min(-1000000).max(1000000).default(0),
+  y: z.coerce.number().int().min(-1000000).max(1000000).default(0),
+});
+
+const availableQuerySchema = z.object({
+  playerId: UUIDSchema,
+});
+
+const buyBodySchema = z.object({
+  x: CoordinateSchema,
+  y: CoordinateSchema,
+});
+
 export function parcelRoutes(repos: Repositories): Router {
   const router = Router();
 
+  const auth = requirePlayer(repos);
+  const bodySelf = requireBodySelf();
+
   // GET /parcels?x=0&y=0&radius=2
   // Obtener parcelas compradas en un área
-  router.get("/", async (req, res, next) => {
+  router.get("/", validate(parcelsQuerySchema, "query"), async (req, res, next) => {
     try {
-      const x = Number(req.query.x) || 0;
-      const y = Number(req.query.y) || 0;
-      const radius = Math.min(Number(req.query.radius) || 2, 50); // max 50
+      const { x, y, radius } = req.query as unknown as z.infer<typeof parcelsQuerySchema>;
 
       const parcels = await repos.parcel.findInArea(x, y, radius);
       res.json({ parcels, parcelSize: WORLD_CONFIG.PARCEL_SIZE });
@@ -28,20 +55,16 @@ export function parcelRoutes(repos: Repositories): Router {
 
   // GET /parcels/price?x=0&y=0
   // Precio dinámico de una parcela por coordenadas
-  router.get("/price", (req, res) => {
-    const x = Number(req.query.x) || 0;
-    const y = Number(req.query.y) || 0;
+  router.get("/price", validate(priceQuerySchema, "query"), (req, res) => {
+    const { x, y } = req.query as unknown as z.infer<typeof priceQuerySchema>;
     res.json({ x, y, price: calculateParcelPrice(x, y) });
   });
 
   // GET /parcels/available?playerId=X
   // Posiciones donde el jugador puede comprar (dentro de su radio de proximidad)
-  router.get("/available", async (req, res, next) => {
+  router.get("/available", readLimiter, validate(availableQuerySchema, "query"), async (req, res, next) => {
     try {
-      const { playerId } = req.query;
-      if (!playerId || typeof playerId !== "string") {
-        throw new AppError(400, "playerId is required");
-      }
+      const { playerId } = req.query as unknown as z.infer<typeof availableQuerySchema>;
 
       // Obtener parcelas del jugador
       const ownedParcels = await repos.parcel.findByOwnerId(playerId);
@@ -110,71 +133,100 @@ export function parcelRoutes(repos: Repositories): Router {
     }
   });
 
-  // POST /parcels/buy  { playerId, x, y }
+  // POST /parcels/buy  { x, y }
   // Comprar una parcela con validación de proximidad y precio dinámico
-  router.post("/buy", async (req, res, next) => {
+  // Wrapped in a PostgreSQL transaction for atomicity
+  router.post("/buy", buyLimiter, validate(buyBodySchema), auth, bodySelf, async (req, res, next) => {
     try {
-      const { playerId, x, y } = req.body;
-
-      if (!playerId || typeof x !== "number" || typeof y !== "number") {
-        throw new AppError(400, "playerId, x, and y are required");
-      }
-
-      // Verificar que el jugador existe
-      const player = await repos.player.findById(playerId);
-      if (!player) throw new AppError(404, "Player not found");
-
-      // Verificar que la parcela no tiene dueño
-      const existing = await repos.parcel.findAtPosition(x, y);
-      if (existing && existing.ownerId) {
-        throw new AppError(409, "Parcel already owned");
-      }
-
-      // --- Restricción de proximidad (5B.2) ---
-      const ownedParcels = await repos.parcel.findByOwnerId(playerId);
-
-      if (ownedParcels.length === 0) {
-        // Primera parcela: debe estar a ≤ MAX_BUY_DISTANCE del origen
-        const distToOrigin = chebyshevDistance(x, y, 0, 0);
-        if (distToOrigin > MAX_BUY_DISTANCE) {
-          throw new AppError(
-            400,
-            `Tu primera parcela debe estar a máximo ${MAX_BUY_DISTANCE} parcelas del centro del mundo`
-          );
-        }
-      } else {
-        // Parcelas siguientes: debe estar a ≤ MAX_BUY_DISTANCE de alguna parcela propia
-        const isNearOwned = ownedParcels.some(
-          (p) => chebyshevDistance(x, y, p.x, p.y) <= MAX_BUY_DISTANCE
-        );
-        if (!isNearOwned) {
-          throw new AppError(
-            400,
-            `Debes tener una parcela a máximo ${MAX_BUY_DISTANCE} parcelas de distancia para comprar aquí`
-          );
-        }
-      }
-
-      // --- Precio dinámico (5B.3) ---
+      const playerId = req.playerId!;
+      const { x, y } = req.body;
       const price = calculateParcelPrice(x, y);
 
-      if (player.coins < price) {
-        throw new AppError(400, "Insufficient coins");
-      }
+      const result = await withTransaction(async (client) => {
+        // Lock player row to prevent race conditions
+        const playerRes = await client.query(
+          "SELECT id, name, coins FROM players WHERE id = $1 FOR UPDATE",
+          [playerId]
+        );
+        const player = playerRes.rows[0];
+        if (!player) throw new AppError(404, "Player not found");
 
-      // Descontar monedas (atómico)
-      const updated = await repos.player.addCoins(playerId, -price);
-      if (!updated) throw new AppError(400, "Insufficient coins");
+        // Verify parcel not already owned
+        const parcelRes = await client.query(
+          "SELECT id, owner_id FROM parcels WHERE x = $1 AND y = $2",
+          [x, y]
+        );
+        const existing = parcelRes.rows[0];
+        if (existing && existing.owner_id) {
+          throw new AppError(409, "Parcel already owned");
+        }
 
-      // Crear o asignar parcela
-      let parcel;
-      if (existing) {
-        parcel = await repos.parcel.update(existing.id, { ownerId: playerId });
-      } else {
-        parcel = await repos.parcel.create({ ownerId: playerId, x, y });
-      }
+        // Proximity check
+        const ownedRes = await client.query(
+          "SELECT x, y FROM parcels WHERE owner_id = $1",
+          [playerId]
+        );
+        const ownedParcels = ownedRes.rows;
 
-      res.json({ parcel, coins: updated.coins, pricePaid: price });
+        if (ownedParcels.length === 0) {
+          const distToOrigin = chebyshevDistance(x, y, 0, 0);
+          if (distToOrigin > MAX_BUY_DISTANCE) {
+            throw new AppError(400, `First parcel must be within ${MAX_BUY_DISTANCE} of world center`);
+          }
+        } else {
+          const isNearOwned = ownedParcels.some(
+            (p: { x: number; y: number }) => chebyshevDistance(x, y, p.x, p.y) <= MAX_BUY_DISTANCE
+          );
+          if (!isNearOwned) {
+            throw new AppError(400, `Must own a parcel within ${MAX_BUY_DISTANCE} distance to buy here`);
+          }
+        }
+
+        // Check balance
+        if (player.coins < price) {
+          throw new AppError(400, "Insufficient coins");
+        }
+
+        // Deduct coins (with safety check)
+        const coinRes = await client.query(
+          "UPDATE players SET coins = coins - $1 WHERE id = $2 AND coins >= $1 RETURNING id, name, coins",
+          [price, playerId]
+        );
+        if (coinRes.rows.length === 0) {
+          throw new AppError(400, "Insufficient coins");
+        }
+
+        // Create or assign parcel
+        let parcel;
+        if (existing) {
+          const upd = await client.query(
+            "UPDATE parcels SET owner_id = $1 WHERE id = $2 RETURNING id, owner_id, x, y",
+            [playerId, existing.id]
+          );
+          parcel = upd.rows[0];
+        } else {
+          const ins = await client.query(
+            "INSERT INTO parcels (owner_id, x, y) VALUES ($1, $2, $3) RETURNING id, owner_id, x, y",
+            [playerId, x, y]
+          );
+          parcel = ins.rows[0];
+        }
+
+        // Audit log
+        await logEconomyEvent(client, {
+          playerId,
+          action: "buy_parcel",
+          amount: price,
+          balanceBefore: player.coins,
+          balanceAfter: coinRes.rows[0].coins,
+          metadata: { parcelX: x, parcelY: y, parcelId: parcel.id },
+          ipAddress: req.ip,
+        });
+
+        return { parcel, coins: coinRes.rows[0].coins, pricePaid: price };
+      });
+
+      res.json(result);
     } catch (err) {
       next(err);
     }

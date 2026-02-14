@@ -4,6 +4,7 @@ import { Schema, type, MapSchema } from "@colyseus/schema";
 export class PlacedObjectSchema extends Schema {
   @type("string") id: string = "";
   @type("string") objectId: string = "";
+  @type("string") objectName: string = "";
   @type("int32") localX: number = 0;
   @type("int32") localY: number = 0;
 }

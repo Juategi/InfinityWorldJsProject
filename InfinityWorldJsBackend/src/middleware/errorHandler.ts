@@ -1,6 +1,8 @@
 import { Request, Response, NextFunction } from "express";
 import { logger } from "../logger";
 
+const isProd = process.env.NODE_ENV === "production";
+
 export class AppError extends Error {
   constructor(
     public statusCode: number,
@@ -18,6 +20,12 @@ export function errorHandler(err: Error, _req: Request, res: Response, _next: Ne
     return;
   }
 
-  logger.error({ err }, "Unhandled error");
-  res.status(500).json({ error: "Internal server error" });
+  // In production: log full error internally but return generic message to client
+  if (isProd) {
+    logger.error({ err: err.message }, "Unhandled error");
+    res.status(500).json({ error: "Internal server error" });
+  } else {
+    logger.error({ err }, "Unhandled error");
+    res.status(500).json({ error: "Internal server error", detail: err.message });
+  }
 }
