@@ -1,6 +1,7 @@
 import { Game } from '../game/Game'
 import { BuildingManager } from '../game/BuildingManager'
 import { isUnlocked } from '../game/PlayerInventory'
+import { notifications } from './NotificationManager'
 import type { BuildingType, BuildingCategory } from '../game/Building'
 import type { GameMode } from '../types'
 
@@ -13,7 +14,6 @@ export class UIManager {
   private buildItems!: HTMLElement
   private buildTabs!: NodeListOf<HTMLElement>
   private buildModeBtn!: HTMLElement
-  private toast!: HTMLElement
   private buildPanel!: HTMLElement
   private exitEditBtn!: HTMLElement | null
 
@@ -43,7 +43,6 @@ export class UIManager {
     this.buildItems = document.getElementById('build-items')!
     this.buildTabs = document.querySelectorAll('.build-tab')!
     this.buildModeBtn = document.getElementById('btn-build-mode')!
-    this.toast = document.getElementById('toast')!
     this.buildPanel = document.getElementById('build-panel')!
   }
 
@@ -334,11 +333,6 @@ export class UIManager {
   }
 
   private showToast(message: string): void {
-    this.toast.textContent = message
-    this.toast.classList.add('visible')
-
-    setTimeout(() => {
-      this.toast.classList.remove('visible')
-    }, 2000)
+    notifications.notify(message, 'info')
   }
 }

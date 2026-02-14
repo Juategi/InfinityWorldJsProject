@@ -383,7 +383,7 @@ Backlog de tareas ordenado por prioridad. Cada tarea es lo suficientemente concr
 
 ## Fase 8: Funcionalidades Secundarias
 
-### 8.1 Sistema de notificaciones in-game
+### 8.1 Sistema de notificaciones in-game ✅
 
 - Cola de notificaciones (compra exitosa, nuevo edificio, parcela adquirida)
 - Toast mejorado con iconos y tipos (éxito, error, info)

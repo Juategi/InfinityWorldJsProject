@@ -5,6 +5,7 @@ import { BUILDING_TYPES } from './game/Building'
 import { initInventory, isUnlocked, unlockObject } from './game/PlayerInventory'
 import { networkClient, type ConnectionState } from './network/NetworkClient'
 import { WorldSync } from './network/WorldSync'
+import { notifications } from './ui/NotificationManager'
 import type { BuildingType, BuildingCategory, BuildingEra } from './game/Building'
 import type { Parcel } from './types'
 
@@ -24,12 +25,9 @@ const playerParcels: Parcel[] = import.meta.env.DEV
 
 // --- Utilidades ---
 
-function showToast(message: string) {
-  const toast = document.getElementById('toast')
-  if (!toast) return
-  toast.textContent = message
-  toast.classList.add('visible')
-  setTimeout(() => toast.classList.remove('visible'), 2000)
+/** Wrapper: show a notification toast (delegates to NotificationManager) */
+function showToast(message: string, type: 'success' | 'error' | 'info' | 'warning' = 'info') {
+  notifications.notify(message, type)
 }
 
 function hideScreen(el: HTMLElement): Promise<void> {
@@ -143,7 +141,7 @@ async function enterWorld() {
       game!.setWorldSync(sync)
     }).catch(err => {
       console.warn('Could not connect to server:', err)
-      showToast('Modo offline - sin conexion al servidor')
+      showToast('Modo offline - sin conexion al servidor', 'warning')
     })
 
     // Re-create WorldSync on reconnection (new Room instance)
@@ -303,7 +301,7 @@ function onShopItemClick(itemId: string) {
   if (!bt) return
 
   if (isUnlocked(bt.id)) {
-    showToast('Ya desbloqueado!')
+    showToast('Ya desbloqueado!', 'info')
     return
   }
 
@@ -311,7 +309,7 @@ function onShopItemClick(itemId: string) {
     // Gratis: desbloquear directamente
     unlockObject(bt.id)
     renderShopItems()
-    showToast(`${bt.name} desbloqueado!`)
+    showToast(`${bt.name} desbloqueado!`, 'success')
     return
   }
 
@@ -344,7 +342,7 @@ function confirmBuyObject() {
 
   const cost = pendingBuyObject.cost
   if (getCoins() < cost) {
-    showToast('Monedas insuficientes!')
+    showToast('Monedas insuficientes!', 'error')
     hideBuyObjectDialog()
     return
   }
@@ -354,7 +352,7 @@ function confirmBuyObject() {
   }
 
   unlockObject(pendingBuyObject.id)
-  showToast(`${pendingBuyObject.name} desbloqueado!`)
+  showToast(`${pendingBuyObject.name} desbloqueado!`, 'success')
   hideBuyObjectDialog()
   updateShopCoins()
   renderShopItems()
@@ -439,7 +437,7 @@ function renderShopParcels() {
 function onShopParcelClick(x: number, y: number) {
   const price = calculateParcelPrice(x, y)
   if (getCoins() < price) {
-    showToast('Monedas insuficientes!')
+    showToast('Monedas insuficientes!', 'error')
     return
   }
 
@@ -483,7 +481,7 @@ function confirmBuyParcel() {
 
   const price = calculateParcelPrice(pendingBuyParcel.x, pendingBuyParcel.y)
   if (game.state.coins < price) {
-    showToast('Monedas insuficientes!')
+    showToast('Monedas insuficientes!', 'error')
     hideBuyParcelDialog()
     return
   }
@@ -511,7 +509,7 @@ function confirmBuyParcel() {
     y,
   })
 
-  showToast(`Parcela (${x}, ${y}) comprada!`)
+  showToast(`Parcela (${x}, ${y}) comprada!`, 'success')
   hideBuyParcelDialog()
   updateShopCoins()
   renderShopParcels()
@@ -566,7 +564,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Botón cerrar sesión (placeholder)
   document.getElementById('btn-logout')!.addEventListener('pointerdown', () => {
-    showToast('Cerrar sesion - Proximamente')
+    showToast('Cerrar sesion - Proximamente', 'info')
   })
 
   // Diálogo de compra de parcela
@@ -596,6 +594,17 @@ document.addEventListener('DOMContentLoaded', () => {
     e.stopPropagation()
     showShopScreen('hud')
   })
+
+  // Notification bell
+  const bellBtn = document.getElementById('btn-notifications')
+  if (bellBtn) {
+    const bellWrapper = bellBtn.parentElement!
+    bellWrapper.appendChild(notifications.getBadge())
+    bellBtn.addEventListener('pointerdown', (e) => {
+      e.stopPropagation()
+      notifications.toggleHistory()
+    })
+  }
 
   // Tabs de sección (Objetos / Parcelas)
   document.querySelectorAll('.shop-section-tab').forEach(tab => {
@@ -639,14 +648,14 @@ document.addEventListener('DOMContentLoaded', () => {
   document.addEventListener('parcelBought', ((e: CustomEvent) => {
     const p = e.detail as { id: string; ownerId: string; x: number; y: number }
     playerParcels.push({ id: p.id, ownerId: p.ownerId, x: p.x, y: p.y })
-    showToast(`Parcela (${p.x}, ${p.y}) comprada!`)
+    showToast(`Parcela (${p.x}, ${p.y}) comprada!`, 'success')
     updateShopCoins()
     renderShopParcels()
   }) as EventListener)
 
   document.addEventListener('serverActionError', ((e: CustomEvent) => {
     const data = e.detail as { action: string; error: string }
-    showToast(data.error)
+    showToast(data.error, 'error')
   }) as EventListener)
 
   document.addEventListener('playerDataLoaded', ((e: CustomEvent) => {
