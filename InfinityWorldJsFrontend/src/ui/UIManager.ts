@@ -156,6 +156,10 @@ export class UIManager {
       console.log('Edificio seleccionado:', e.detail)
     }) as EventListener)
 
+    document.addEventListener('buildFailed', () => {
+      this.showToast('Cannot place here!')
+    })
+
     // Atajos de teclado
     document.addEventListener('keydown', (e) => {
       const bm = this.game.getBuildingManager()

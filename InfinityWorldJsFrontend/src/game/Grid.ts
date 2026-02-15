@@ -251,6 +251,11 @@ export class Grid {
     }
   }
 
+  // Reiniciar todas las celdas (limpiar ocupación)
+  resetCells(): void {
+    this.initializeCells()
+  }
+
   setVisible(visible: boolean): void {
     if (this.ground) {
       this.ground.setEnabled(visible)

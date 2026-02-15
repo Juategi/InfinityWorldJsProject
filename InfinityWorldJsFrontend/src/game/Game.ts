@@ -111,12 +111,15 @@ export class Game {
     const parcelWorldX = parcel.x * WORLD_CONFIG.PARCEL_SIZE
     const parcelWorldZ = parcel.y * WORLD_CONFIG.PARCEL_SIZE
 
-    // Mover edificios a coordenadas locales (0-100)
+    // Mover edificios a coordenadas locales (0-PARCEL_SIZE)
     this.buildingManager.toLocalCoordinates(parcelWorldX, parcelWorldZ)
 
     // Mostrar grid para edición
     this.grid.setVisible(true)
     this.grid.createGround()
+
+    // Resetear ocupación del grid y recalcular desde los edificios existentes
+    this.buildingManager.reoccupyGrid()
 
     // Centrar cámara en el centro del grid
     const gridCenter = WORLD_CONFIG.PARCEL_SIZE / 2

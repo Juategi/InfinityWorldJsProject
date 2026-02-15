@@ -7,12 +7,16 @@ import '@babylonjs/core/Culling/ray'
 import { Grid } from './Grid'
 import { BuildingManager } from './BuildingManager'
 
+const TAP_THRESHOLD = 20 // px máximo de movimiento para considerar un tap
+const TAP_TIME_LIMIT = 500 // ms máximo entre down y up para considerar un tap
+
 export class InputManager {
   private scene: Scene
   private camera: ArcRotateCamera
   private buildingManager: BuildingManager
   private isDragging: boolean = false
   private lastPointerPos: { x: number; y: number } | null = null
+  private pointerDownTime: number = 0
   private groundPlane: Plane
 
   constructor(
@@ -66,8 +70,10 @@ export class InputManager {
 
   private onPointerDown(pointerInfo: PointerInfo): void {
     this.isDragging = false
+    this.pointerDownTime = Date.now()
     const evt = pointerInfo.event as PointerEvent
     this.lastPointerPos = { x: evt.clientX, y: evt.clientY }
+    console.log('[InputManager] POINTERDOWN at', evt.clientX, evt.clientY, 'buildMode:', this.buildingManager.isInBuildMode())
   }
 
   private onPointerMove(pointerInfo: PointerInfo): void {
@@ -76,7 +82,7 @@ export class InputManager {
     if (this.lastPointerPos) {
       const dx = Math.abs(evt.clientX - this.lastPointerPos.x)
       const dy = Math.abs(evt.clientY - this.lastPointerPos.y)
-      if (dx > 10 || dy > 10) {
+      if (dx > TAP_THRESHOLD || dy > TAP_THRESHOLD) {
         this.isDragging = true
       }
     }
@@ -95,8 +101,12 @@ export class InputManager {
   }
 
   private onPointerUp(pointerInfo: PointerInfo): void {
-    // Si fue un tap (no drag)
-    if (!this.isDragging) {
+    const elapsed = Date.now() - this.pointerDownTime
+
+    console.log('[InputManager] POINTERUP isDragging:', this.isDragging, 'elapsed:', elapsed, 'ms')
+
+    // Si fue un tap (no drag y dentro del tiempo límite)
+    if (!this.isDragging && elapsed < TAP_TIME_LIMIT) {
       this.handleTap(pointerInfo)
     }
 
@@ -105,6 +115,8 @@ export class InputManager {
   }
 
   private handleTap(pointerInfo: PointerInfo): void {
+    console.log('[InputManager] handleTap - buildMode:', this.buildingManager.isInBuildMode(), 'moveMode:', this.buildingManager.isInMoveMode())
+
     // En modo move: confirmar movimiento
     if (this.buildingManager.isInMoveMode()) {
       const groundPos = this.getGroundPosition(pointerInfo)
@@ -118,9 +130,14 @@ export class InputManager {
     // En modo construcción: colocar edificio
     if (this.buildingManager.isInBuildMode()) {
       const groundPos = this.getGroundPosition(pointerInfo)
+      console.log('[InputManager] groundPos:', groundPos?.toString())
       if (groundPos) {
         this.buildingManager.updatePreview(groundPos)
-        this.buildingManager.confirmBuild()
+        const placed = this.buildingManager.confirmBuild()
+        console.log('[InputManager] confirmBuild result:', placed ? 'OK' : 'FAILED')
+        if (!placed) {
+          document.dispatchEvent(new CustomEvent('buildFailed'))
+        }
       }
       return
     }

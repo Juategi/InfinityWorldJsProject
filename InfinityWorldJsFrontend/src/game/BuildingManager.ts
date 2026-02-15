@@ -63,6 +63,24 @@ export class BuildingManager {
     }
   }
 
+  // Recalcular la ocupación del grid a partir de los edificios actuales
+  // (solo los que están dentro de los límites del grid)
+  reoccupyGrid(): void {
+    this.grid.resetCells()
+    for (const building of this.buildings.values()) {
+      const gridPos = this.grid.worldToGrid(building.rootNode.position)
+      if (gridPos) {
+        this.grid.occupyCells(
+          building.gridX,
+          building.gridZ,
+          building.type.sizeX,
+          building.type.sizeZ,
+          building.id
+        )
+      }
+    }
+  }
+
   // Obtener el offset actual
   getWorldOffset(): { x: number; z: number } {
     return { x: this.worldOffsetX, z: this.worldOffsetZ }
